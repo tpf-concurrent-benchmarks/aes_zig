@@ -1,7 +1,6 @@
 const std = @import("std");
 const print = std.debug.print;
 
-/// Efficient implementation of a 4x4 matrix of u8, used in the AES-128 algorithm.
 pub const Matrix = struct {
     data: [4][4]u8,
 

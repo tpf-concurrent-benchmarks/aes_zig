@@ -10,12 +10,6 @@ const N_K = constants.N_K;
 pub const AESKey = struct {
     data: [N_B * (N_R + 1)]Word,
 
-    // pub fn new_direct(cipher_key: [u8; 4 * N_K as usize]) -> Self {
-    // let mut data = [0; N_B * (N_R + 1)];
-    // Self::expand_key(cipher_key, &mut data);
-    // Self { data }
-    // }
-
     pub fn new_direct(cipher_key: [4 * N_K]u8) AESKey {
         var data: [N_B * (N_R + 1)]Word = undefined;
         @memset(&data, 0);
@@ -23,13 +17,6 @@ pub const AESKey = struct {
         AESKey.expand_key(cipher_key, &data);
         return AESKey{ .data = data };
     }
-
-    //
-    // pub fn new_inverse(cipher_key: [u8; 4 * N_K as usize]) -> Self {
-    // let mut data = [0; N_B * (N_R + 1)];
-    // Self::inv_expand_key(cipher_key, &mut data);
-    // Self { data }
-    // }
 
     pub fn new_inverse(cipher_key: [4 * N_K]u8) AESKey {
         var data: [N_B * (N_R + 1)]Word = undefined;
