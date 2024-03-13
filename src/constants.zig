@@ -1,7 +1,11 @@
 // zig fmt: off
+
+// Number of 32-bit words comprising the Cipher Key
 pub const N_B = 4;
 pub const Word = u32;
+// Number of rounds, which is a function of Nk and Nb (which is fixed)
 pub const N_R = 10;
+// Number of columns (32-bit words) comprising the State
 pub const N_K: u8 = 4;
 
 pub const S_BOX = [256]u8{
