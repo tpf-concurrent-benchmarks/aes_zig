@@ -35,15 +35,12 @@ pub const State = struct {
     }
 
     pub fn u32_to_be_bytes(n: u32) [4]u8 {
-        return [4]u8{
-            @truncate(n >> 24),
-            @truncate(n >> 16),
-            @truncate(n >> 8),
-            @truncate(n),
-        };
+        var result: [4]u8 = undefined;
+        std.mem.writeIntBig(u32, &result, n);
+        return result;
     }
 
-    pub fn new_from_words(words: *[N_B]Word) State {
+    pub fn new_from_words(words: *const [N_B]Word) State {
         var state = State.new();
         inline for (0..N_B) |i| {
             const word = words[i];
@@ -255,11 +252,13 @@ test "State.inv_sub_bytes should work" {
     try std.testing.expect(s.equals(&expected_state));
 }
 
-test "State.get_state_from_data_in should work" {
+test "State.new_from_data_in should work" {
     const data_in = [4 * N_B]u8{
-    0x32, 0x88, 0x31, 0xe0, 0x43, 0x5a, 0x31, 0x37, 0xf6, 0x30, 0x98, 0x07, 0xa8, 0x8d, 0xa2,
-    0x34,
+        0x32, 0x88, 0x31, 0xe0, 0x43, 0x5a, 0x31, 0x37, 0xf6, 0x30, 0x98, 0x07, 0xa8, 0x8d, 0xa2,
+        0x34,
     };
+
+    const state = State.new_from_data_in(&data_in);
 
     const expected_state = State.new_from_data([4][N_B]u8{
         [N_B]u8{ 0x32, 0x43, 0xf6, 0xa8 },
@@ -268,11 +267,8 @@ test "State.get_state_from_data_in should work" {
         [N_B]u8{ 0xe0, 0x37, 0x07, 0x34 },
     });
 
-    const state = State.new_from_data_in(&data_in);
-
     try std.testing.expect(state.equals(&expected_state));
 }
-
 
 test "State.set_data_out should work" {
     var data_out: [4 * N_B]u8 = undefined;
