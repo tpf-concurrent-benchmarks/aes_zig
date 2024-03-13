@@ -12,7 +12,6 @@ pub const AESKey = struct {
 
     pub fn new_direct(cipher_key: [4 * N_K]u8) AESKey {
         var data: [N_B * (N_R + 1)]Word = undefined;
-        @memset(&data, 0);
 
         AESKey.expand_key(cipher_key, &data);
         return AESKey{ .data = data };
@@ -20,20 +19,13 @@ pub const AESKey = struct {
 
     pub fn new_inverse(cipher_key: [4 * N_K]u8) AESKey {
         var data: [N_B * (N_R + 1)]Word = undefined;
-        @memset(&data, 0);
 
         AESKey.inv_expand_key(cipher_key, &data);
         return AESKey{ .data = data };
     }
 
-    pub fn u32_from_be_bytes(bytes: [4]u8) Word {
-        const reversed_bytes = [4]u8{
-            bytes[3],
-            bytes[2],
-            bytes[1],
-            bytes[0],
-        };
-        return @bitCast(reversed_bytes);
+    pub fn u32_from_be_bytes(bytes: *const [4]u8) Word {
+        return std.mem.readIntBig(u32, bytes);
     }
 
     pub fn expand_key(cipher_key: [4 * N_K]u8, data: *[N_B * (N_R + 1)]Word) void {
@@ -41,12 +33,7 @@ pub const AESKey = struct {
         var i: usize = 0;
 
         while (i < N_K) {
-            data[i] = AESKey.u32_from_be_bytes([4]u8{
-                cipher_key[4 * i],
-                cipher_key[4 * i + 1],
-                cipher_key[4 * i + 2],
-                cipher_key[4 * i + 3],
-            });
+            data[i] = AESKey.u32_from_be_bytes(@ptrCast(&cipher_key[i * 4]));
             i += 1;
         }
 
@@ -66,7 +53,7 @@ pub const AESKey = struct {
         AESKey.expand_key(cipher_key, dw);
 
         for (1..N_R) |round| {
-            const new_words: [N_B]Word = state.inv_mix_columns_words(&dw[round * N_B .. (round + 1) * N_B]);
+            const new_words: [N_B]Word = AESKey.inv_mix_columns_words(@ptrCast(&dw[round * N_B]));
             for (0..N_B) |i| {
                 dw[round * N_B + i] = new_words[i];
             }
@@ -98,15 +85,9 @@ pub const AESKey = struct {
         s.inv_mix_columns();
         const cols = s.data.get_cols();
         var result: [N_B]Word = undefined;
-        @memset(&result, 0);
 
         for (0..N_B) |i| {
-            result[i] = AESKey.u32_from_be_bytes([4]u8{
-                cols[i][0],
-                cols[i][1],
-                cols[i][2],
-                cols[i][3],
-            });
+            result[i] = AESKey.u32_from_be_bytes(&cols[i]);
         }
         return result;
     }
@@ -116,8 +97,8 @@ pub const AESKey = struct {
     }
 
     fn apply_s_box(value: u8) u8 {
-        const pos_x: u8 = @truncate(value >> 4);
-        const pos_y: u8 = @truncate(value & 0x0f);
+        const pos_x: u8 = value >> 4;
+        const pos_y: u8 = value & 0x0f;
         return constants.S_BOX[pos_x * 16 + pos_y];
     }
 };
@@ -152,5 +133,21 @@ test "AESKey.new_direct should work" {
 
     for (0..(N_B * (N_R + 1))) |i| {
         try std.testing.expectEqual(expected_words[i], key.data[i]);
+    }
+}
+
+test "AESKey.new_inverse should work" {
+    const cipher_key = [4 * N_B]u8{
+    0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
+    };
+
+    const inv_expanded_key = AESKey.new_inverse(cipher_key);
+
+    const expected_words = [N_B * (N_R + 1)]Word{
+    729683222, 682545830, 2885096840, 164581180, 725026983, 4066563077, 3158228415, 1264680290, 3430221291, 1041748462, 2183752785, 3376943411, 2082411511, 1107870233, 3223432776, 157925243, 2424849427, 3531638282, 312551490, 466130745, 1856178940, 3156446454, 2927797428, 3041538957, 1862064246, 3537851520, 2086531124, 3373777849, 314603079, 3223265991, 3158495987, 1968509258, 3749548634, 526561437, 2736808558, 3598021412, 209410659, 320465662, 2956560528, 1716321204, 3491035560, 3387827593, 3779005640, 3059944614,
+    };
+
+    for (0..(N_B * (N_R + 1))) |i| {
+        try std.testing.expectEqual(expected_words[i], inv_expanded_key.data[i]);
     }
 }
