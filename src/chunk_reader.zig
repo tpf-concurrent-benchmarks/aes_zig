@@ -1,6 +1,5 @@
 const std = @import("std");
 const io = std.io;
-const BufferedReader = io.bufferedReader;
 
 const CHUNK_SIZE = 16;
 
@@ -15,7 +14,7 @@ pub const ChunkReader = struct {
         };
     }
 
-    pub fn fill_chunk(self: *Self, reader: anytype, buffer: *[CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
+    pub fn fill_chunk(self: Self, reader: anytype, buffer: *[CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
         var bytes_read: usize = 0;
         while (bytes_read < CHUNK_SIZE) {
             const read_result = try reader.read(buffer[0..]);
@@ -32,7 +31,7 @@ pub const ChunkReader = struct {
         return bytes_read;
     }
 
-    pub fn read_chunks(self: *Self, reader: anytype, chunks_amount: usize, buffer: [][CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
+    fn read_chunks(self: Self, reader: anytype, chunks_amount: usize, buffer: [][CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
         var chunks_filled: usize = 0;
 
         while (chunks_filled < chunks_amount) {
@@ -48,13 +47,13 @@ pub const ChunkReader = struct {
         }
         return chunks_filled;
     }
-};
 
-fn apply_null_padding(bytes_read: usize, buffer: *[CHUNK_SIZE]u8) void {
-    for (bytes_read..CHUNK_SIZE) |i| {
-        buffer[i] = 0;
+    fn apply_null_padding(bytes_read: usize, buffer: *[CHUNK_SIZE]u8) void {
+        for (bytes_read..CHUNK_SIZE) |i| {
+            buffer[i] = 0;
+        }
     }
-}
+};
 
 pub const Cursor = struct {
     data: []const u8,
@@ -90,7 +89,7 @@ pub const Cursor = struct {
 test "apply_null_padding pads the entire buffer with null bytes if bytes_read is 0" {
     var buffer: [CHUNK_SIZE]u8 = undefined;
 
-    apply_null_padding(0, &buffer);
+    ChunkReader.apply_null_padding(0, &buffer);
     inline for (0..CHUNK_SIZE) |i| {
         try std.testing.expectEqual(@as(u8, 0), buffer[i]);
     }
@@ -100,7 +99,7 @@ test "apply_null_padding only pads the last CHUNK_SIZE - bytes_read bytes with n
     var buffer: [CHUNK_SIZE]u8 = undefined;
     @memset(&buffer, 1);
 
-    apply_null_padding(2, &buffer);
+    ChunkReader.apply_null_padding(2, &buffer);
     inline for (0..2) |i| {
         try std.testing.expectEqual(@as(u8, 1), buffer[i]);
     }
