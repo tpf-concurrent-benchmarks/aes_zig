@@ -14,7 +14,7 @@ pub const ChunkReader = struct {
         };
     }
 
-    pub fn fill_chunk(self: Self, reader: anytype, buffer: *[CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
+    fn fill_chunk(self: Self, reader: anytype, buffer: *[CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
         var bytes_read: usize = 0;
         while (bytes_read < CHUNK_SIZE) {
             const read_result = try reader.read(buffer[0..]);
@@ -31,7 +31,7 @@ pub const ChunkReader = struct {
         return bytes_read;
     }
 
-    fn read_chunks(self: Self, reader: anytype, chunks_amount: usize, buffer: [][CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
+    pub fn read_chunks(self: Self, reader: anytype, chunks_amount: usize, buffer: [][CHUNK_SIZE]u8) @TypeOf(reader).Error!usize {
         var chunks_filled: usize = 0;
 
         while (chunks_filled < chunks_amount) {

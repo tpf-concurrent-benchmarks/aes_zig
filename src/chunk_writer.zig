@@ -26,44 +26,17 @@ pub const ChunkWriter = struct {
         if (self.remove_padding) {
             try Self.write_chunk_without_padding(writer, chunk);
         } else {
-            try writer.writeAll(&chunk);
+            try writer.writeAll(chunk[0..]);
         }
     }
 
-	fn write_chunk_without_padding(writer: anytype, chunk: [CHUNK_SIZE]u8) @TypeOf(writer).Error!void {
-		var i: usize = chunk.len - 1;
-		while (i > 0) : (i -= 1) {
-			if (chunk[i] != 0) {
-				break;
-			}
-		}
-		try writer.writeAll(chunk[0..i + 1]);
-	}
+    fn write_chunk_without_padding(writer: anytype, chunk: [CHUNK_SIZE]u8) @TypeOf(writer).Error!void {
+        var i: usize = chunk.len - 1;
+        while (i > 0) : (i -= 1) {
+            if (chunk[i] != 0) {
+                break;
+            }
+        }
+        try writer.writeAll(chunk[0..i + 1]);
+    }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
