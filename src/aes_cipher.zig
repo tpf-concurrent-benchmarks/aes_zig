@@ -76,10 +76,8 @@ pub const AESCipher = struct {
 
     pub fn decipher(self: *Self, input: anytype, output: anytype) !void {
         var buffered_reader = std.io.bufferedReader(input);
-        var buffered_writer = std.io.bufferedWriter(output);
 
         var br = buffered_reader.reader();
-        var bw = buffered_writer.writer();
 
         var chunk_reader = cr.ChunkReader.init(false);
         var chunk_writer = cw.ChunkWriter.init(true);
@@ -91,7 +89,7 @@ pub const AESCipher = struct {
             }
             var deciphered_chunks = try self.decipher_blocks(BUFFER_SIZE, self.buffer[0..chunks_filled]);
 
-            try chunk_writer.write_chunks(bw, deciphered_chunks[0..chunks_filled]);
+            try chunk_writer.write_chunks(output, deciphered_chunks[0..chunks_filled]);
         }
     }
 };
