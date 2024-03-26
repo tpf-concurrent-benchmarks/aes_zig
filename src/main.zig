@@ -1,56 +1,51 @@
 const std = @import("std");
 const matrix = @import("matrix.zig");
 const AESCipher = @import("aes_cipher.zig").AESCipher;
-const Queue = @import("queue.zig").Queue;
+const Queue = @import("components/queue.zig").Queue;
+const Message = @import("components/message.zig").Message;
+const c = @import("constants.zig");
 
-const RNG = struct {
-    prev: u128,
+const Allocator = std.mem.Allocator;
+const assert = std.debug.assert;
+const warn = std.debug.warn;
+const Order = std.math.Order;
+const testing = std.testing;
+const expect = testing.expect;
+const expectEqual = testing.expectEqual;
+const expectError = testing.expectError;
 
-    pub fn init(seed: u32) RNG {
-        return RNG{ .prev = seed };
+const initiate_worker = @import("components/worker.zig").initiate_worker;
+const initiate_sink = @import("components/sink.zig").initiate_sink;
+
+fn create_block(num: usize) [4 * c.N_B]u8 {
+    var block: [4 * c.N_B]u8 = undefined;
+
+    var i: u6 = 0;
+    var shift: u6 = 0;
+    while (i < 5) : (i += 1) {
+        block[i] = @truncate(num >> shift);
+        shift += 8;
     }
 
-    pub fn next(self: *RNG) u32 {
-        // self.prev = (69069 * self.prev + 1) % 4294967295;
-        // return @truncate(self.prev);
-        self.prev = self.prev + 1;
-        return @truncate(self.prev);
-    }
-};
-
-fn producer(queue: *Queue(u32), number: u32) !void {
-    var rng = RNG.init(number);
-
-    for (0..100) |_| {
-        var value = rng.next();
-        try queue.push(value);
-    }
-}
-
-fn consumer(queue: *Queue(u32)) void {
-    for (0..100) |_| {
-        var value = queue.pop();
-        std.debug.print("{d}\n", .{value});
-    }
+    return block;
 }
 
 pub fn main() !void {
-    var queue = Queue(u32).init(5, std.heap.page_allocator);
+    const workers_num = 4;
+    var input_queue = Queue(Message).init(5, std.heap.page_allocator);
+    var result_queue = Queue(Message).init(5, std.heap.page_allocator);
 
-    var producer_threads: [4]std.Thread = undefined;
-    var consumer_threads: [4]std.Thread = undefined;
-
-    for (0..4) |i| {
-        const producer_thread = try std.Thread.spawn(.{}, producer, .{ &queue, @as(u32, @truncate(1000 * i)) });
-        const consumer_thread = try std.Thread.spawn(.{}, consumer, .{&queue});
-
-        producer_threads[i] = producer_thread;
-        consumer_threads[i] = consumer_thread;
+    for (0..workers_num) |_| {
+        _ = try initiate_worker(&input_queue, &result_queue);
     }
 
-    for (producer_threads, consumer_threads) |producer_thread, consumer_thread| {
-        std.Thread.join(producer_thread);
-        std.Thread.join(consumer_thread);
+    _ = try initiate_sink(&result_queue);
+
+    const amount = 1000;
+    for (0..amount) |i| {
+        const block = create_block(i);
+        const message = Message.init(block, i);
+        try input_queue.push(message);
     }
 }
 
