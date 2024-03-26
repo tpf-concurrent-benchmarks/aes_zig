@@ -7,6 +7,7 @@ pub fn Queue(comptime T: type) type {
         const TailQueueType = std.TailQueue(T);
 
         unsafe_queue: TailQueueType,
+        lock: std.Thread.Mutex,
         allocator: Allocator,
         not_empty: std.Thread.Semaphore,
         not_full: std.Thread.Semaphore,
@@ -18,7 +19,8 @@ pub fn Queue(comptime T: type) type {
             };
             const unsafe_queue = TailQueueType{};
             return Self{
-				.unsafe_queue = unsafe_queue,
+                .unsafe_queue = unsafe_queue,
+                .lock = std.Thread.Mutex{},
                 .allocator = allocator,
                 .not_empty = not_empty,
                 .not_full = not_full,
@@ -26,19 +28,24 @@ pub fn Queue(comptime T: type) type {
         }
 
         fn append(self: *Self, value: T) !void {
-			var new_node = try self.allocator.create(TailQueueType.Node);
-			new_node.data = value;
+            var new_node = try self.allocator.create(TailQueueType.Node);
+            new_node.data = value;
 
-			self.unsafe_queue.append(new_node);
+            self.lock.lock();
+            self.unsafe_queue.append(new_node);
+            self.lock.unlock();
         }
 
-		fn remove(self: *Self) T {
-			if (self.unsafe_queue.pop()) |node| {
-				defer self.allocator.destroy(node);
-				return node.data;
-			}
-			std.debug.panic("Queue is empty", .{});
-		}
+        fn remove(self: *Self) T {
+            self.lock.lock();
+            if (self.unsafe_queue.popFirst()) |node| {
+                defer self.allocator.destroy(node);
+                self.lock.unlock();
+                return node.data;
+            }
+            self.lock.unlock();
+            std.debug.panic("Queue is empty", .{});
+        }
 
         pub fn push(self: *Self, value: T) !void {
             self.not_full.wait();
