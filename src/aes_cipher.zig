@@ -55,7 +55,7 @@ pub const AESCipher = struct {
         return result[0..chunks.len];
     }
 
-    pub fn cipher(self: *Self, input: anytype, output: anytype) !void {
+    pub fn file_cipher(self: *Self, input: anytype, output: anytype) !void {
         var buffered_reader = std.io.bufferedReader(input);
 
         var br = buffered_reader.reader();
@@ -74,7 +74,17 @@ pub const AESCipher = struct {
         }
     }
 
-    pub fn decipher(self: *Self, input: anytype, output: anytype) !void {
+    pub fn cipher(self: *Self, input_filename: []const u8, output_filename: []const u8) !void {
+        const input_file = try std.fs.cwd().openFile(input_filename, .{});
+        defer input_file.close();
+
+        const output_file = try std.fs.cwd().createFile(output_filename, .{});
+        defer output_file.close();
+
+        try self.file_cipher(input_file.reader(), output_file.writer());
+    }
+
+    pub fn file_decipher(self: *Self, input: anytype, output: anytype) !void {
         var buffered_reader = std.io.bufferedReader(input);
 
         var br = buffered_reader.reader();
@@ -91,5 +101,15 @@ pub const AESCipher = struct {
 
             try chunk_writer.write_chunks(output, deciphered_chunks[0..chunks_filled]);
         }
+    }
+
+    pub fn decipher(self: *Self, input_filename: []const u8, output_filename: []const u8) !void {
+        const input_file = try std.fs.cwd().openFile(input_filename, .{});
+        defer input_file.close();
+
+        const output_file = try std.fs.cwd().createFile(output_filename, .{});
+        defer output_file.close();
+
+        try self.file_decipher(input_file.reader(), output_file.writer());
     }
 };
