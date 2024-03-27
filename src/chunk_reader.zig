@@ -112,7 +112,7 @@ test "ChunkReader.fill_chunk fills the buffer if the input has enough data" {
     var data: [CHUNK_SIZE]u8 = undefined;
     @memset(&data, 42);
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [CHUNK_SIZE]u8 = undefined;
@@ -126,7 +126,7 @@ test "ChunkReader.fill_chunk fills the buffer if the input has enough data" {
 test "ChunkReader.fill_chunk fills the buffer partially if the input has less data than the buffer size" {
     const data = [_]u8{ 1, 2, 3, 4 };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [CHUNK_SIZE]u8 = undefined;
@@ -140,7 +140,7 @@ test "ChunkReader.fill_chunk fills the buffer partially if the input has less da
 
 test "ChunkReader.fill_chunk fills the buffer with null bytes if the input has no data and with_padding is true" {
     var cursor = Cursor.init(&([_]u8{}));
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [CHUNK_SIZE]u8 = undefined;
@@ -154,7 +154,7 @@ test "ChunkReader.fill_chunk fills the buffer with null bytes if the input has n
 test "ChunkReader.fill_chunk applies padding correctly when the input has some data" {
     const data = [_]u8{ 1, 2, 3, 4 };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [CHUNK_SIZE]u8 = undefined;
@@ -172,7 +172,7 @@ test "ChunkReader.fill_chunk applies padding correctly when the input has some d
 test "ChunkReader.read_chunk can read one chunk with the exact size" {
     const data = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [1][CHUNK_SIZE]u8 = undefined;
@@ -186,7 +186,7 @@ test "ChunkReader.read_chunk can read one chunk with the exact size" {
 test "ChunkReader.read_chunk can read one chunk with less data CHUNK_SIZE bytes" {
     const data = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [1][CHUNK_SIZE]u8 = undefined;
@@ -208,7 +208,7 @@ test "ChunkReader.read_chunk can read multiple chunks with the exact size" {
         25, 26, 27, 28, 29, 30, 31, 32,
     };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [2][CHUNK_SIZE]u8 = undefined;
@@ -229,7 +229,7 @@ test "ChunkReader.read_chunk can read multiple chunks with less data than CHUNK_
         25, 26, 27, 28, 29, 30, 31,
     };
     var cursor = Cursor.init(&data);
-    var r = cursor.reader();
+    const r = cursor.reader();
 
     var cr = ChunkReader.init(true);
     var buffer: [2][CHUNK_SIZE]u8 = undefined;

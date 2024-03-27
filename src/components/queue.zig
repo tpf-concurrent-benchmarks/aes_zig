@@ -13,8 +13,8 @@ pub fn Queue(comptime T: type) type {
         not_full: std.Thread.Semaphore,
 
         pub fn init(max_size: usize, allocator: Allocator) Self {
-            var not_empty = std.Thread.Semaphore{};
-            var not_full = std.Thread.Semaphore{
+            const not_empty = std.Thread.Semaphore{};
+            const not_full = std.Thread.Semaphore{
                 .permits = max_size,
             };
             const unsafe_queue = TailQueueType{};

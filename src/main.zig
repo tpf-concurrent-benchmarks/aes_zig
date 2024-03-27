@@ -38,7 +38,7 @@ fn cleanup(comptime T: type, input_queue: *Queue(Message(T)), worker_threads: []
 }
 
 pub fn main() !void {
-    var allocator = std.heap.page_allocator;
+    const allocator = std.heap.page_allocator;
     const workers_num = 4;
     var input_queue = Queue(Message(Block)).init(5, allocator);
     var result_queue = Queue(Message(Block)).init(5, allocator);
