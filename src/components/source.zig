@@ -6,13 +6,13 @@ const Message = @import("message.zig").Message;
 
 pub fn Source(comptime T: type) type {
     return struct {
-        queue: *Queue(T),
+        queue: *Queue(Message(T)),
         buffer_size: usize,
         allocator: std.mem.Allocator,
 
         const Self = @This();
 
-        pub fn init(queue: *Queue(T), buffer_size: usize, allocator: std.mem.Allocator) Self {
+        pub fn init(queue: *Queue(Message(T)), buffer_size: usize, allocator: std.mem.Allocator) Self {
             return Self{
                 .queue = queue,
                 .buffer_size = buffer_size,
@@ -36,7 +36,7 @@ pub fn Source(comptime T: type) type {
                     break;
                 }
                 for (buffer[0..chunks_filled]) |block| {
-                    const m = Message.init(block, next_pos);
+                    const m = Message(T).init(block, next_pos);
                     try self.queue.push(m);
                     next_pos += 1;
                 }

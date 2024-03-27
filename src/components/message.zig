@@ -5,23 +5,27 @@ const MinHeap = @import("min_heap.zig").MinHeap;
 
 const maxU64: u64 = 0xFFFFFFFFFFFFFFFF;
 
-pub const Message = struct {
-    block: [4 * c.N_B]u8,
-    pos: u64,
+pub fn Message(comptime T: type) type {
+    return struct {
+        data: T,
+        pos: u64,
 
-    pub fn init(block: [4 * c.N_B]u8, pos: u64) Message {
-        return Message{ .block = block, .pos = pos };
-    }
+        const Self = @This();
 
-    pub fn messageComparison(a: Message, b: Message) Order {
-        return std.math.order(a.pos, b.pos);
-    }
+        pub fn init(data: T, pos: u64) Self {
+            return Message(T){ .data = data, .pos = pos };
+        }
 
-    pub fn isEof(self: Message) bool {
-        return self.pos == maxU64;
-    }
-};
+        pub fn order(self: Self, other: Message(T)) Order {
+            return std.math.order(self.pos, other.pos);
+        }
 
-pub const MessageHeap = MinHeap(Message);
+        pub fn is_eof(self: Self) bool {
+            return self.pos == maxU64;
+        }
 
-pub const EOF = Message{ .block = [_]u8{0} ** (4 * c.N_B), .pos = maxU64 };
+        pub fn init_eof() Self {
+            return Message(T){ .data = undefined, .pos = maxU64 };
+        }
+    };
+}

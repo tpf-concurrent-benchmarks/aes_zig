@@ -14,30 +14,32 @@ const expect = testing.expect;
 const expectEqual = testing.expectEqual;
 const expectError = testing.expectError;
 const ChunkReader = @import("chunk_reader.zig").ChunkReader;
-const EOF = @import("components/message.zig").EOF;
 
 const initiate_worker = @import("components/worker.zig").initiate_worker;
+const Sink = @import("components/sink.zig").Sink;
 const initiate_sink = @import("components/sink.zig").initiate_sink;
-const initiate_source = @import("components/source.zig").initiate_source;
+const Source = @import("components/source.zig").Source;
 
 const BUFFER_SIZE = 1000000;
+const Block = [4 * c.N_B]u8;
 
-fn cleanup(input_queue: *Queue(Message), worker_threads: []std.Thread, result_queue: *Queue(Message), sink_thread: std.Thread) !void {
+fn cleanup(comptime T: type, input_queue: *Queue(Message(T)), worker_threads: []std.Thread, result_queue: *Queue(Message(T)), sink_thread: std.Thread) !void {
     for (worker_threads) |_| {
-        try input_queue.push(EOF);
+        try input_queue.push(Message(T).init_eof());
     }
     for (worker_threads) |worker_thread| {
         std.Thread.join(worker_thread);
     }
 
-    try result_queue.push(EOF);
+    try result_queue.push(Message(T).init_eof());
     std.Thread.join(sink_thread);
 }
 
 pub fn main() !void {
+    var allocator = std.heap.page_allocator;
     const workers_num = 4;
-    var input_queue = Queue(Message).init(5, std.heap.page_allocator);
-    var result_queue = Queue(Message).init(5, std.heap.page_allocator);
+    var input_queue = Queue(Message(Block)).init(5, allocator);
+    var result_queue = Queue(Message(Block)).init(5, allocator);
 
     var worker_threads: [workers_num]std.Thread = undefined;
 
@@ -46,11 +48,13 @@ pub fn main() !void {
         worker_threads[i] = thread;
     }
 
-    const sink_thread = try initiate_sink(&result_queue);
+    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator);
+    const sink_thread = try initiate_sink(Block, &sink, true, "data/output.txt");
 
-    try initiate_source(&input_queue);
+    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator);
+    try source.run_from_file(true, "data/input.txt");
 
-    try cleanup(&input_queue, &worker_threads, &result_queue, sink_thread);
+    try cleanup(Block, &input_queue, &worker_threads, &result_queue, sink_thread);
 }
 
 test {
