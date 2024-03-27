@@ -16,6 +16,8 @@ const expectError = testing.expectError;
 const ChunkReader = @import("chunk_reader.zig").ChunkReader;
 
 const initiate_worker = @import("components/worker.zig").initiate_worker;
+const Worker = @import("components/worker.zig").Worker;
+const handle_message = @import("components/worker.zig").handle_message;
 const Sink = @import("components/sink.zig").Sink;
 const initiate_sink = @import("components/sink.zig").initiate_sink;
 const Source = @import("components/source.zig").Source;
@@ -44,7 +46,8 @@ pub fn main() !void {
     var worker_threads: [workers_num]std.Thread = undefined;
 
     for (0..workers_num) |i| {
-        const thread = try initiate_worker(&input_queue, &result_queue);
+        var worker = Worker(Block, Block).init(&input_queue, &result_queue, handle_message);
+        const thread = try initiate_worker(Block, Block, &worker);
         worker_threads[i] = thread;
     }
 
