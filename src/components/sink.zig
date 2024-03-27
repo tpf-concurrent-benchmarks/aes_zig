@@ -6,9 +6,9 @@ const MessageHeap = @import("message.zig").MessageHeap;
 const ChunkWriter = @import("../chunk_writer.zig").ChunkWriter;
 const c = @import("../constants.zig");
 
-fn handle_block(block: [4 * c.N_B]u8, writer: anytype, chunk_writer: ChunkWriter) !void {
+fn handle_block(T: type, block: [4 * c.N_B]u8, chunk_writer: *ChunkWriter(T)) !void {
     // std.debug.print("{s}", .{block});
-    try chunk_writer.write_chunk(writer, block);
+    try chunk_writer.write_chunk(block);
 }
 
 pub fn Sink(comptime T: type) type {
@@ -27,12 +27,10 @@ pub fn Sink(comptime T: type) type {
             };
         }
 
-        pub fn run_from_writer(self: *Self, remove_padding: bool, writer: anytype) !void {
+        pub fn run_from_writer(self: *Self, remove_padding: bool, output: anytype) !void {
             var next_block: u64 = 0;
 
-            var buffered_writer = std.io.bufferedWriter(writer);
-            const bw = buffered_writer.writer();
-            const cw = ChunkWriter.init(remove_padding);
+            var cw = ChunkWriter(@TypeOf(output)).init(remove_padding, output);
 
             while (true) {
                 const message = self.queue.pop();
@@ -50,16 +48,15 @@ pub fn Sink(comptime T: type) type {
                     @panic("Received block out of order");
                 }
 
-                try handle_block(message.data, bw, cw);
+                try handle_block(@TypeOf(output), message.data, &cw);
                 next_block += 1;
 
                 while (self.heap.len() > 0 and self.heap.peek().pos == next_block) {
                     const message_i = self.heap.pop();
-                    try handle_block(message_i.data, bw, cw);
+                    try handle_block(@TypeOf(output), message_i.data, &cw);
                     next_block += 1;
                 }
             }
-            try buffered_writer.flush();
         }
 
         pub fn run_from_file(self: *Self, remove_padding: bool, output_file_path: []const u8) !void {
