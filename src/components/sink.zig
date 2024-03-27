@@ -31,8 +31,8 @@ pub fn Sink(comptime T: type) type {
             var next_block: u64 = 0;
 
             var buffered_writer = std.io.bufferedWriter(writer);
-            var bw = buffered_writer.writer();
-            var cw = ChunkWriter.init(remove_padding);
+            const bw = buffered_writer.writer();
+            const cw = ChunkWriter.init(remove_padding);
 
             while (true) {
                 const message = self.queue.pop();

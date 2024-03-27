@@ -21,9 +21,7 @@ pub fn Source(comptime T: type) type {
         }
 
         pub fn run_from_reader(self: *Self, with_padding: bool, input: anytype) !void {
-            var buffered_reader = std.io.bufferedReader(input);
-            var br = buffered_reader.reader();
-            var chunk_reader = ChunkReader.init(with_padding);
+            var chunk_reader = ChunkReader(@TypeOf(input)).init(with_padding, input);
 
             const buffer = self.allocator.alloc([4 * c.N_B]u8, self.buffer_size) catch return error.OutOfMemory;
             defer self.allocator.free(buffer);
@@ -31,7 +29,7 @@ pub fn Source(comptime T: type) type {
             var next_pos: u64 = 0;
 
             while (true) {
-                const chunks_filled = try chunk_reader.read_chunks(br, self.buffer_size, buffer);
+                const chunks_filled = try chunk_reader.read_chunks(self.buffer_size, buffer);
                 if (chunks_filled == 0) {
                     break;
                 }

@@ -17,7 +17,7 @@ pub const AESCipher = struct {
     const Self = @This();
 
     pub fn init(cipher_key: u128, allocator: std.mem.Allocator) !Self {
-        var block_cipher = aes_block_cipher.AESBlockCipher.new_u128(cipher_key);
+        const block_cipher = aes_block_cipher.AESBlockCipher.new_u128(cipher_key);
         var arena = std.heap.ArenaAllocator.init(allocator);
         var arena_allocator = arena.allocator();
         const buffer = arena_allocator.alloc([4 * N_B]u8, BUFFER_SIZE) catch return error.OutOfMemory;
@@ -58,7 +58,7 @@ pub const AESCipher = struct {
     pub fn file_cipher(self: *Self, input: anytype, output: anytype) !void {
         var buffered_reader = std.io.bufferedReader(input);
 
-        var br = buffered_reader.reader();
+        const br = buffered_reader.reader();
 
         var chunk_reader = cr.ChunkReader.init(true);
         var chunk_writer = cw.ChunkWriter.init(false);
@@ -87,7 +87,7 @@ pub const AESCipher = struct {
     pub fn file_decipher(self: *Self, input: anytype, output: anytype) !void {
         var buffered_reader = std.io.bufferedReader(input);
 
-        var br = buffered_reader.reader();
+        const br = buffered_reader.reader();
 
         var chunk_reader = cr.ChunkReader.init(false);
         var chunk_writer = cw.ChunkWriter.init(true);
