@@ -1,5 +1,8 @@
 SHELL:=/bin/bash
 
+setup:
+	mkdir -p data
+
 run:
 	zig build run
 
