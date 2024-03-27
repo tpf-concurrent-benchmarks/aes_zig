@@ -28,6 +28,10 @@ fn sink_loop(result_queue: *Queue(Message)) !void {
     while (true) {
         const message: Message = result_queue.pop();
 
+        if (message.isEof()) {
+            break;
+        }
+
         if (message.pos > next_block) {
             heap.push(message);
             continue;
@@ -46,6 +50,8 @@ fn sink_loop(result_queue: *Queue(Message)) !void {
             next_block += 1;
         }
     }
+
+    try buffered_writer.flush();
 }
 
 pub fn initiate_sink(result_queue: *Queue(Message)) !std.Thread {
