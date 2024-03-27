@@ -13,22 +13,13 @@ const testing = std.testing;
 const expect = testing.expect;
 const expectEqual = testing.expectEqual;
 const expectError = testing.expectError;
+const ChunkReader = @import("chunk_reader.zig").ChunkReader;
 
 const initiate_worker = @import("components/worker.zig").initiate_worker;
 const initiate_sink = @import("components/sink.zig").initiate_sink;
+const initiate_source = @import("components/source.zig").initiate_source;
 
-fn create_block(num: usize) [4 * c.N_B]u8 {
-    var block: [4 * c.N_B]u8 = undefined;
-
-    var i: u6 = 0;
-    var shift: u6 = 0;
-    while (i < 5) : (i += 1) {
-        block[i] = @truncate(num >> shift);
-        shift += 8;
-    }
-
-    return block;
-}
+const BUFFER_SIZE = 1000000;
 
 pub fn main() !void {
     const workers_num = 4;
@@ -41,12 +32,7 @@ pub fn main() !void {
 
     _ = try initiate_sink(&result_queue);
 
-    const amount = 1000;
-    for (0..amount) |i| {
-        const block = create_block(i);
-        const message = Message.init(block, i);
-        try input_queue.push(message);
-    }
+    try initiate_source(&input_queue);
 }
 
 test {

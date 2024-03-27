@@ -22,7 +22,7 @@ pub const ChunkWriter = struct {
         }
     }
 
-    fn write_chunk(self: Self, writer: anytype, chunk: [CHUNK_SIZE]u8) @TypeOf(writer).Error!void {
+    pub fn write_chunk(self: Self, writer: anytype, chunk: [CHUNK_SIZE]u8) @TypeOf(writer).Error!void {
         if (self.remove_padding) {
             try Self.write_chunk_without_padding(writer, chunk);
         } else {
@@ -37,6 +37,6 @@ pub const ChunkWriter = struct {
                 break;
             }
         }
-        try writer.writeAll(chunk[0..i + 1]);
+        try writer.writeAll(chunk[0 .. i + 1]);
     }
 };

@@ -1,6 +1,7 @@
 const std = @import("std");
 const Order = std.math.Order;
 const c = @import("../constants.zig");
+const MinHeap = @import("min_heap.zig").MinHeap;
 
 pub const Message = struct {
     block: [4 * c.N_B]u8,
@@ -14,3 +15,5 @@ pub const Message = struct {
         return std.math.order(a.pos, b.pos);
     }
 };
+
+pub const MessageHeap = MinHeap(Message);
