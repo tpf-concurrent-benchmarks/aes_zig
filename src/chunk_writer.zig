@@ -3,7 +3,7 @@ const io = std.io;
 
 const CHUNK_SIZE = 16;
 
-pub fn ChunkWriter(T: type) type {
+pub fn ChunkWriter(comptime T: type) type {
     return struct {
         remove_padding: bool,
         buffered_writer: io.BufferedWriter(4096, T),
@@ -49,6 +49,10 @@ pub fn ChunkWriter(T: type) type {
             if (bytes_written != i + 1) {
                 @panic("Failed to write chunk");
             }
+        }
+
+        pub fn flush(self: *Self) !void {
+            try self.buffered_writer.flush();
         }
     };
 }
