@@ -51,4 +51,4 @@ pub const R_CON = [10]u32{
     0x1b000000, 0x36000000,
 };
 
-pub const MAX_HEAP_SIZE = 255;
+pub const MAX_HEAP_SIZE = 65535;
