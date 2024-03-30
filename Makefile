@@ -1,7 +1,14 @@
 SHELL:=/bin/bash
 
-setup:
+init:
+	docker swarm init || true
+
+_common_folders:
+	mkdir -p graphite
 	mkdir -p data
+.PHONY: _common_folders
+
+setup: _common_folders
 
 run:
 	zig build run
@@ -12,3 +19,22 @@ test:
 fmt:
 	zig fmt *.zig
 	zig fmt **/*.zig
+
+build:
+	docker build -t aes_zig -f docker/Dockerfile .
+
+remove:
+	if docker stack ls | grep -q aes_zig; then \
+        docker stack rm aes_zig; \
+	fi
+	
+deploy:	remove build
+	until \
+	docker stack deploy \
+	-c docker/docker-compose.yaml \
+	aes_zig; \
+	do sleep 1; \
+	done
+
+logs:
+	docker service logs aes_zig_app -f
