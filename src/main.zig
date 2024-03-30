@@ -1,6 +1,6 @@
 const std = @import("std");
 const matrix = @import("matrix.zig");
-const AESCipher = @import("aes_cipher.zig").AESCipher;
+const AESBlockCipher = @import("aes_block_cipher.zig").AESBlockCipher;
 const Queue = @import("components/queue.zig").Queue;
 const Message = @import("components/message.zig").Message;
 const c = @import("constants.zig");
@@ -17,7 +17,6 @@ const ChunkReader = @import("chunk_reader.zig").ChunkReader;
 
 const initiate_worker = @import("components/worker.zig").initiate_worker;
 const Worker = @import("components/worker.zig").Worker;
-const handle_message = @import("components/worker.zig").handle_message;
 const Sink = @import("components/sink.zig").Sink;
 const initiate_sink = @import("components/sink.zig").initiate_sink;
 const Source = @import("components/source.zig").Source;
@@ -37,7 +36,7 @@ fn cleanup(comptime T: type, input_queue: *Queue(Message(T)), worker_threads: []
     std.Thread.join(sink_thread);
 }
 
-pub fn main() !void {
+fn encrypt_file() !void {
     const allocator = std.heap.page_allocator;
     const workers_num = 4;
     var input_queue = Queue(Message(Block)).init(5, allocator);
@@ -46,18 +45,47 @@ pub fn main() !void {
     var worker_threads: [workers_num]std.Thread = undefined;
 
     for (0..workers_num) |i| {
-        var worker = Worker(Block, Block).init(&input_queue, &result_queue, handle_message);
+        var worker = Worker(Block, Block).init(&input_queue, &result_queue, true);
         const thread = try initiate_worker(Block, Block, &worker);
         worker_threads[i] = thread;
     }
 
     var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator);
-    const sink_thread = try initiate_sink(Block, &sink, true, "data/output.txt");
+    const sink_thread = try initiate_sink(Block, &sink, false, "data/output.txt");
 
     var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator);
-    try source.run_from_file(true, "data/input.txt");
+    try source.run_from_file(true, "data/lorem_ipsum_4.txt");
 
     try cleanup(Block, &input_queue, &worker_threads, &result_queue, sink_thread);
+}
+
+fn decrypt_file() !void {
+    const allocator = std.heap.page_allocator;
+    const workers_num = 4;
+    var input_queue = Queue(Message(Block)).init(5, allocator);
+    var result_queue = Queue(Message(Block)).init(5, allocator);
+
+    var worker_threads: [workers_num]std.Thread = undefined;
+
+    for (0..workers_num) |i| {
+        var worker = Worker(Block, Block).init(&input_queue, &result_queue, false);
+        const thread = try initiate_worker(Block, Block, &worker);
+        worker_threads[i] = thread;
+    }
+
+    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator);
+    const sink_thread = try initiate_sink(Block, &sink, true, "data/decrypted.txt");
+
+    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator);
+    try source.run_from_file(false, "data/output.txt");
+
+    try cleanup(Block, &input_queue, &worker_threads, &result_queue, sink_thread);
+}
+
+pub fn main() !void {
+    try encrypt_file();
+    try decrypt_file();
+    std.debug.print("Done\n", .{});
 }
 
 test {

@@ -13,19 +13,19 @@ pub fn ChunkWriter(comptime T: type) type {
         pub fn init(remove_padding: bool, writer: anytype) Self {
             const buffered_writer = io.bufferedWriter(writer);
             return Self{
-            .remove_padding = remove_padding,
-            .buffered_writer = buffered_writer,
+                .remove_padding = remove_padding,
+                .buffered_writer = buffered_writer,
             };
         }
 
         /// Write the chunks to the writer, removing any null padding if `remove_padding` is true.
         /// Returns an error if it fails to write any of the chunks.
         pub fn write_chunks(self: *Self, chunks: [][CHUNK_SIZE]u8) !void {
-                defer self.buffered_writer.flush();
-                for (chunks) |chunk| {
-                    try self.write_chunk(chunk);
-                }
+            defer self.buffered_writer.flush();
+            for (chunks) |chunk| {
+                try self.write_chunk(chunk);
             }
+        }
 
         pub fn write_chunk(self: *Self, chunk: [CHUNK_SIZE]u8) !void {
             if (self.remove_padding) {

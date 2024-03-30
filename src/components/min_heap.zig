@@ -65,7 +65,7 @@ pub fn MinHeap(comptime T: type) type {
 
         pub fn push(self: *Self, value: T) void {
             if (self.len() == self.max_size) {
-                std.debug.panic("Heap is full", .{});
+                std.debug.panic("Sink Heap is full - {}", .{self.max_size});
             }
             self.data[self.len()] = value;
             self.size += 1;

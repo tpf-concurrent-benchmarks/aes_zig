@@ -57,9 +57,7 @@ pub fn ChunkReader(comptime T: type) type {
                 buffer[i] = 0;
             }
         }
-
     };
-
 }
 
 pub const Cursor = struct {

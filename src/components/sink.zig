@@ -6,7 +6,7 @@ const MessageHeap = @import("message.zig").MessageHeap;
 const ChunkWriter = @import("../chunk_writer.zig").ChunkWriter;
 const c = @import("../constants.zig");
 
-fn handle_block(T: type, block: [4 * c.N_B]u8, chunk_writer: *ChunkWriter(T)) !void {
+fn handle_block(comptime T: type, block: [4 * c.N_B]u8, chunk_writer: *ChunkWriter(T)) !void {
     // std.debug.print("{s}", .{block});
     try chunk_writer.write_chunk(block);
 }
@@ -20,11 +20,7 @@ pub fn Sink(comptime T: type) type {
         const Self = @This();
 
         pub fn init(queue: *Queue(Message(T)), buffer_size: usize, allocator: std.mem.Allocator) !Self {
-            return Self{
-            .queue = queue,
-            .buffer_size = buffer_size,
-            .heap = try MinHeap(Message(T)).init(c.MAX_HEAP_SIZE, Message(T).order, allocator)
-            };
+            return Self{ .queue = queue, .buffer_size = buffer_size, .heap = try MinHeap(Message(T)).init(c.MAX_HEAP_SIZE, Message(T).order, allocator) };
         }
 
         pub fn run_from_writer(self: *Self, remove_padding: bool, output: anytype) !void {
@@ -57,6 +53,8 @@ pub fn Sink(comptime T: type) type {
                     next_block += 1;
                 }
             }
+
+            try cw.flush();
         }
 
         pub fn run_from_file(self: *Self, remove_padding: bool, output_file_path: []const u8) !void {
@@ -72,19 +70,5 @@ pub fn sink_loop(comptime T: type, sink: *Sink(T), remove_padding: bool, output_
 }
 
 pub fn initiate_sink(comptime T: type, sink: *Sink(T), remove_padding: bool, output_file_path: []const u8) !std.Thread {
-    return std.Thread.spawn(.{}, sink_loop, .{T, sink, remove_padding, output_file_path});
+    return std.Thread.spawn(.{}, sink_loop, .{ T, sink, remove_padding, output_file_path });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
