@@ -21,7 +21,7 @@ const Sink = @import("components/sink.zig").Sink;
 const initiate_sink = @import("components/sink.zig").initiate_sink;
 const Source = @import("components/source.zig").Source;
 
-const BUFFER_SIZE = 1000000;
+const BUFFER_SIZE = 20000000;
 const Block = [4 * c.N_B]u8;
 
 
@@ -48,8 +48,8 @@ fn encrypt_file() !void {
     const allocator_3 = gpa_3.allocator();
 
     const workers_num = 4;
-    var input_queue = Queue(Message(Block)).init(50, allocator_1);
-    var result_queue = Queue(Message(Block)).init(50, allocator_1);
+    var input_queue = Queue(Message(Block)).init(200, allocator_1);
+    var result_queue = Queue(Message(Block)).init(200, allocator_1);
 
     var worker_threads: [workers_num]std.Thread = undefined;
 
@@ -78,8 +78,8 @@ fn decrypt_file() !void {
     const allocator_3 = gpa_3.allocator();
 
     const workers_num = 4;
-    var input_queue = Queue(Message(Block)).init(50, allocator_1);
-    var result_queue = Queue(Message(Block)).init(50, allocator_1);
+    var input_queue = Queue(Message(Block)).init(200, allocator_1);
+    var result_queue = Queue(Message(Block)).init(200, allocator_1);
 
     var worker_threads: [workers_num]std.Thread = undefined;
 
