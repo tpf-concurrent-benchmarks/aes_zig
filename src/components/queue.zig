@@ -12,6 +12,14 @@ pub fn Queue(comptime T: type) type {
         not_empty: std.Thread.Semaphore,
         not_full: std.Thread.Semaphore,
 
+        pub fn init_ptr(self: *Self, max_size: usize, allocator: Allocator) void {
+            self.unsafe_queue = TailQueueType{};
+            self.lock = std.Thread.Mutex{};
+            self.allocator = allocator;
+            self.not_empty = std.Thread.Semaphore{};
+            self.not_full = std.Thread.Semaphore{ .permits = max_size };
+        }
+
         pub fn init(max_size: usize, allocator: Allocator) Self {
             const not_empty = std.Thread.Semaphore{};
             const not_full = std.Thread.Semaphore{
@@ -25,6 +33,12 @@ pub fn Queue(comptime T: type) type {
                 .not_empty = not_empty,
                 .not_full = not_full,
             };
+        }
+
+        pub fn destroy(self: *Self) void {
+            while (self.unsafe_queue.popFirst()) |node| {
+                self.allocator.destroy(node);
+            }
         }
 
         fn append(self: *Self, value: T) !void {

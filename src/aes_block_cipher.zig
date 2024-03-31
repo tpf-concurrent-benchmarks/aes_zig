@@ -37,7 +37,7 @@ pub const AESBlockCipher = struct {
         return AESBlockCipher.new(cipher_key_bytes);
     }
 
-    pub fn cipher_block(self: *const AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
+    pub fn cipher_block(self: AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
         var data_out: [4 * N_B]u8 = undefined;
 
         var s = state.State.new_from_data_in(data_in);
@@ -59,7 +59,7 @@ pub const AESBlockCipher = struct {
         return data_out;
     }
 
-    pub fn inv_cipher_block(self: *const AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
+    pub fn inv_cipher_block(self: AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
         var data_out: [4 * N_B]u8 = undefined;
 
         var s = state.State.new_from_data_in(data_in);

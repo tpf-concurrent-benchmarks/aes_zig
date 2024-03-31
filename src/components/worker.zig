@@ -2,25 +2,24 @@ const std = @import("std");
 const Queue = @import("queue.zig").Queue;
 const Message = @import("message.zig").Message;
 const c = @import("../constants.zig");
-const AESBlockCipher = @import("../aes_block_cipher.zig").AESBlockCipher;
 
 const Block = [4 * c.N_B]u8;
 
-pub fn Worker(comptime R: type, comptime S: type) type {
+pub fn Worker(comptime R: type, comptime S: type, comptime T: type) type {
     return struct {
         input_queue: *Queue(Message(R)),
         result_queue: *Queue(Message(S)),
-        aes_block_cipher: AESBlockCipher,
-        maybe_encrypt: bool,
+        work_fn: *const fn(T, R) S,
+        ctx: T,
 
         const Self = @This();
 
-        pub fn init(input_queue: *Queue(Message(R)), result_queue: *Queue(Message(S)), maybe_encrypt: bool) Self {
+        pub fn init(input_queue: *Queue(Message(R)), result_queue: *Queue(Message(S)), ctx: T, comptime work_fn: *const fn(T, R) S) Self {
             return Self{
                 .input_queue = input_queue,
                 .result_queue = result_queue,
-                .aes_block_cipher = AESBlockCipher.new_u128(0x2b7e151628aed2a6abf7158809cf4f3c),
-                .maybe_encrypt = maybe_encrypt,
+                .work_fn = work_fn,
+                .ctx = ctx
             };
         }
 
@@ -32,32 +31,19 @@ pub fn Worker(comptime R: type, comptime S: type) type {
                     break;
                 }
 
-                // const result = (self.work_fn)(message.data);
-
-                const result = switch (self.maybe_encrypt) {
-                    true => self.encrypt(message.data),
-                    false => self.decrypt(message.data),
-                };
+                const result = self.work_fn(self.ctx, message.data);
 
                 message.data = result;
                 try self.result_queue.push(message);
             }
         }
-
-        pub fn encrypt(self: *Self, block: Block) Block {
-            return self.aes_block_cipher.cipher_block(block);
-        }
-
-        pub fn decrypt(self: *Self, block: Block) Block {
-            return self.aes_block_cipher.inv_cipher_block(block);
-        }
     };
 }
 
-pub fn worker_loop(comptime R: type, comptime S: type, worker: *Worker(R, S)) !void {
+pub fn worker_loop(comptime R: type, comptime S: type, comptime T: type, worker: *Worker(R, S, T)) !void {
     return worker.run();
 }
 
-pub fn initiate_worker(comptime R: type, comptime S: type, worker: *Worker(R, S)) !std.Thread {
-    return std.Thread.spawn(.{}, worker_loop, .{ R, S, worker });
+pub fn initiate_worker(comptime R: type, comptime S: type, comptime T: type, worker: *Worker(R, S, T)) !std.Thread {
+    return std.Thread.spawn(.{}, worker_loop, .{ R, S, T, worker });
 }
