@@ -37,7 +37,7 @@ pub const AESBlockCipher = struct {
         return AESBlockCipher.new(cipher_key_bytes);
     }
 
-    pub fn cipher_block(self: *const AESBlockCipher, data_in: *const [4 * N_B]u8) [4 * N_B]u8 {
+    pub fn cipher_block(self: *const AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
         var data_out: [4 * N_B]u8 = undefined;
 
         var s = state.State.new_from_data_in(data_in);
@@ -59,7 +59,7 @@ pub const AESBlockCipher = struct {
         return data_out;
     }
 
-    pub fn inv_cipher_block(self: *const AESBlockCipher, data_in: *const [4 * N_B]u8) [4 * N_B]u8 {
+    pub fn inv_cipher_block(self: *const AESBlockCipher, data_in: [4 * N_B]u8) [4 * N_B]u8 {
         var data_out: [4 * N_B]u8 = undefined;
 
         var s = state.State.new_from_data_in(data_in);
@@ -101,7 +101,7 @@ test "AESBlockCipher.cipher_block should return the expected cipher bytes when c
 
     const cipher = AESBlockCipher.new(cipher_key);
 
-    const cipher_bytes = cipher.cipher_block(&plain_bytes);
+    const cipher_bytes = cipher.cipher_block(plain_bytes);
 
     try std.testing.expect(std.mem.eql(u8, &cipher_bytes, &expected_cipher_bytes));
 }
@@ -121,7 +121,7 @@ test "AESBlockCipher.cipher_block should return the expected cipher bytes when c
 
     const cipher = AESBlockCipher.new_u128(cipher_key);
 
-    const cipher_bytes = cipher.cipher_block(&plain_bytes);
+    const cipher_bytes = cipher.cipher_block(plain_bytes);
 
     try std.testing.expect(std.mem.eql(u8, &cipher_bytes, &expected_cipher_bytes));
 }

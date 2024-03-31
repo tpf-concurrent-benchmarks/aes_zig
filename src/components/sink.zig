@@ -27,6 +27,11 @@ pub fn Sink(comptime T: type) type {
             var next_block: u64 = 0;
 
             var cw = ChunkWriter(@TypeOf(output)).init(remove_padding, output);
+            defer {
+                cw.deinit() catch {
+                    std.debug.print("Error while deinitializing ChunkWriter\n", .{});
+                };
+            }
 
             while (true) {
                 const message = self.queue.pop();
@@ -53,8 +58,6 @@ pub fn Sink(comptime T: type) type {
                     next_block += 1;
                 }
             }
-
-            try cw.flush();
         }
 
         pub fn run_from_file(self: *Self, remove_padding: bool, output_file_path: []const u8) !void {

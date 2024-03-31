@@ -20,7 +20,7 @@ pub const State = struct {
         return State{ .data = matrix.Matrix.init(data) };
     }
 
-    pub fn new_from_data_in(data_in: *const [4 * N_B]u8) State {
+    pub fn new_from_data_in(data_in: [4 * N_B]u8) State {
         var state = State.new();
         inline for (0..N_B) |i| {
             const col = [N_B]u8{
@@ -51,7 +51,7 @@ pub const State = struct {
         return state;
     }
 
-    pub fn set_data_out(self: *const State, data_out: *[4 * N_B]u8) void {
+    pub fn set_data_out(self: State, data_out: *[4 * N_B]u8) void {
         inline for (0..N_B) |i| {
             const col = self.data.get_col(i);
             data_out[4 * i] = col[0];
@@ -161,7 +161,7 @@ pub const State = struct {
 
 test "State.new_from_words should work" {
     var words = [N_B]Word{ 0x01020304, 0x05060708, 0x090a0b0c, 0x0d0e0f10 };
-    const state = State.new_from_words(&words);
+    const state = State.new_from_words(words);
     const expected = matrix.Matrix.init([4][4]u8{
         [4]u8{ 0x01, 0x05, 0x09, 0x0d },
         [4]u8{ 0x02, 0x06, 0x0a, 0x0e },
@@ -258,7 +258,7 @@ test "State.new_from_data_in should work" {
         0x34,
     };
 
-    const state = State.new_from_data_in(&data_in);
+    const state = State.new_from_data_in(data_in);
 
     const expected_state = State.new_from_data([4][N_B]u8{
         [N_B]u8{ 0x32, 0x43, 0xf6, 0xa8 },

@@ -18,16 +18,23 @@ pub fn ChunkWriter(comptime T: type) type {
             };
         }
 
+        pub fn deinit(self: *Self) !void {
+            return self.buffered_writer.flush();
+        }
+
         /// Write the chunks to the writer, removing any null padding if `remove_padding` is true.
         /// Returns an error if it fails to write any of the chunks.
         pub fn write_chunks(self: *Self, chunks: [][CHUNK_SIZE]u8) !void {
-            defer self.buffered_writer.flush();
             for (chunks) |chunk| {
                 try self.write_chunk(chunk);
             }
         }
 
         pub fn write_chunk(self: *Self, chunk: [CHUNK_SIZE]u8) !void {
+            try self.write_chunk_without_flush(chunk);
+        }
+
+        fn write_chunk_without_flush(self: *Self, chunk: [CHUNK_SIZE]u8) !void {
             if (self.remove_padding) {
                 try self.write_chunk_without_padding(chunk);
             } else {
@@ -49,10 +56,6 @@ pub fn ChunkWriter(comptime T: type) type {
             if (bytes_written != i + 1) {
                 @panic("Failed to write chunk");
             }
-        }
-
-        pub fn flush(self: *Self) !void {
-            try self.buffered_writer.flush();
         }
     };
 }

@@ -53,7 +53,7 @@ pub const AESKey = struct {
         AESKey.expand_key(cipher_key, dw);
 
         for (1..N_R) |round| {
-            const new_words: [N_B]Word = AESKey.inv_mix_columns_words(@ptrCast(&dw[round * N_B]));
+            const new_words: [N_B]Word = AESKey.inv_mix_columns_words(@ptrCast(dw[round * N_B .. (round + 1) * N_B]));
             for (0..N_B) |i| {
                 dw[round * N_B + i] = new_words[i];
             }
@@ -80,7 +80,7 @@ pub const AESKey = struct {
         return (word << 8) | (word >> 24);
     }
 
-    fn inv_mix_columns_words(words: *[N_B]Word) [N_B]Word {
+    fn inv_mix_columns_words(words: *const [N_B]Word) [N_B]Word {
         var s = state.State.new_from_words(words);
         s.inv_mix_columns();
         const cols = s.data.get_cols();

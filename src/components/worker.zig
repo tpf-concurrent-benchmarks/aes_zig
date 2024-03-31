@@ -45,11 +45,11 @@ pub fn Worker(comptime R: type, comptime S: type) type {
         }
 
         pub fn encrypt(self: *Self, block: Block) Block {
-            return self.aes_block_cipher.cipher_block(&block);
+            return self.aes_block_cipher.cipher_block(block);
         }
 
         pub fn decrypt(self: *Self, block: Block) Block {
-            return self.aes_block_cipher.inv_cipher_block(&block);
+            return self.aes_block_cipher.inv_cipher_block(block);
         }
     };
 }

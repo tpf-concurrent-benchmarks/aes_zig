@@ -24,6 +24,8 @@ const Source = @import("components/source.zig").Source;
 const BUFFER_SIZE = 1000000;
 const Block = [4 * c.N_B]u8;
 
+
+
 fn cleanup(comptime T: type, input_queue: *Queue(Message(T)), worker_threads: []std.Thread, result_queue: *Queue(Message(T)), sink_thread: std.Thread) !void {
     for (worker_threads) |_| {
         try input_queue.push(Message(T).init_eof());
@@ -37,10 +39,17 @@ fn cleanup(comptime T: type, input_queue: *Queue(Message(T)), worker_threads: []
 }
 
 fn encrypt_file() !void {
-    const allocator = std.heap.page_allocator;
+    var gpa_1 = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa_2 = std.heap.GeneralPurposeAllocator(.{.thread_safe=false}){};
+    var gpa_3 = std.heap.GeneralPurposeAllocator(.{.thread_safe=false}){};
+
+    const allocator_1 = gpa_1.allocator();
+    const allocator_2 = gpa_2.allocator();
+    const allocator_3 = gpa_3.allocator();
+
     const workers_num = 4;
-    var input_queue = Queue(Message(Block)).init(5, allocator);
-    var result_queue = Queue(Message(Block)).init(5, allocator);
+    var input_queue = Queue(Message(Block)).init(50, allocator_1);
+    var result_queue = Queue(Message(Block)).init(50, allocator_1);
 
     var worker_threads: [workers_num]std.Thread = undefined;
 
@@ -50,20 +59,27 @@ fn encrypt_file() !void {
         worker_threads[i] = thread;
     }
 
-    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator);
+    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator_2);
     const sink_thread = try initiate_sink(Block, &sink, false, "data/output.txt");
 
-    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator);
+    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator_3);
     try source.run_from_file(true, "data/lorem_ipsum_4.txt");
 
     try cleanup(Block, &input_queue, &worker_threads, &result_queue, sink_thread);
 }
 
 fn decrypt_file() !void {
-    const allocator = std.heap.page_allocator;
+    var gpa_1 = std.heap.GeneralPurposeAllocator(.{}){};
+    var gpa_2 = std.heap.GeneralPurposeAllocator(.{.thread_safe=false}){};
+    var gpa_3 = std.heap.GeneralPurposeAllocator(.{.thread_safe=false}){};
+
+    const allocator_1 = gpa_1.allocator();
+    const allocator_2 = gpa_2.allocator();
+    const allocator_3 = gpa_3.allocator();
+
     const workers_num = 4;
-    var input_queue = Queue(Message(Block)).init(5, allocator);
-    var result_queue = Queue(Message(Block)).init(5, allocator);
+    var input_queue = Queue(Message(Block)).init(50, allocator_1);
+    var result_queue = Queue(Message(Block)).init(50, allocator_1);
 
     var worker_threads: [workers_num]std.Thread = undefined;
 
@@ -73,10 +89,10 @@ fn decrypt_file() !void {
         worker_threads[i] = thread;
     }
 
-    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator);
+    var sink = try Sink(Block).init(&result_queue, BUFFER_SIZE, allocator_2);
     const sink_thread = try initiate_sink(Block, &sink, true, "data/decrypted.txt");
 
-    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator);
+    var source = Source(Block).init(&input_queue, BUFFER_SIZE, allocator_3);
     try source.run_from_file(false, "data/output.txt");
 
     try cleanup(Block, &input_queue, &worker_threads, &result_queue, sink_thread);
