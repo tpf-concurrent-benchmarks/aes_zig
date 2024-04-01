@@ -11,7 +11,7 @@ _common_folders:
 setup: _common_folders
 
 run:
-	zig build run
+	zig build run -Doptimize=ReleaseFast
 
 test:
 	zig build test --summary all
