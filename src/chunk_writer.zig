@@ -24,7 +24,7 @@ pub fn ChunkWriter(comptime T: type) type {
 
         /// Write the chunks to the writer, removing any null padding if `remove_padding` is true.
         /// Returns an error if it fails to write any of the chunks.
-        pub fn write_chunks(self: *Self, chunks: [][CHUNK_SIZE]u8) !void {
+        pub fn write_chunks(self: *Self, chunks: []const [CHUNK_SIZE]u8) !void {
             for (chunks) |chunk| {
                 try self.write_chunk(chunk);
             }
