@@ -31,8 +31,8 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
 		var input_queue = try allocator.create(Queue(Message(R)));
 		var output_queue = try allocator.create(Queue(Message(S)));
 
-		input_queue.init_ptr(5000, allocator);
-		output_queue.init_ptr(5000, allocator);
+		input_queue.init_ptr(50, allocator);
+		output_queue.init_ptr(50, allocator);
 
 		for (0..n_threads) |i| {
 			workers[i] = Worker(R, S, T).init(input_queue, output_queue, ctx, f);
@@ -64,7 +64,7 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
 		self.allocator.free(self.workers);
 	}
 
-	fn send_messages(self: *Self, input: []R) !void {
+	fn send_messages(self: *Self, input: []const R) !void {
 		var next_pos: u64 = 0;
 		for (input) |item| {
 			const message = MessageInput.init(item, next_pos);
@@ -73,9 +73,8 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
 		}
 	}
 
-	fn receive_results(self: *Self, comptime max_size: usize, expected_results: usize) ![]S {
+	fn receive_results(self: *Self, expected_results: usize, results: []S) !void {
 		var next_item: u64 = 0;
-		var results: [max_size]S = undefined;
 
 		while (true) {
 			const message = self.output_queue.pop();
@@ -104,13 +103,11 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
 				break;
 			}
 		}
-		return results[0..next_item];
 	}
 
-	pub fn map(self: *Self, comptime max_size: usize, input: []R) ![]S {
+	pub fn map(self: *Self, input: []const R, results: []S) !void {
 		try self.send_messages(input);
-		const results = self.receive_results(max_size, input.len);
-		return results;
+		try self.receive_results(input.len, results);
 	}
 	};
 }
