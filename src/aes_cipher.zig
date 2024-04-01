@@ -54,10 +54,10 @@ pub const AESCipher = struct {
         };
     }
 
-    pub fn deinit(self: *Self) void {
+    pub fn destroy(self: *Self) !void {
         self.arena.deinit();
-        self.pmap_encrypt.deinit();
-        self.pmap_decrypt.deinit();
+        try self.pmap_encrypt.destroy();
+        try self.pmap_decrypt.destroy();
     }
 
     inline fn get_slices_filled(chunks_filled: usize) usize {
@@ -116,7 +116,7 @@ pub const AESCipher = struct {
             try self.pmap_encrypt.map(input_blocks[0..slices_filled], results[0..]);
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
-        return chunk_writer.deinit();
+        return chunk_writer.flush();
     }
 
     pub fn decipher(self: *Self, input: anytype, output: anytype) !void {
@@ -140,7 +140,7 @@ pub const AESCipher = struct {
 
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
-        return chunk_writer.deinit();
+        return chunk_writer.flush();
     }
 
     pub fn cipher_file(self: *Self, input_path: []const u8, output_path: []const u8) !void {

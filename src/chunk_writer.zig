@@ -18,7 +18,7 @@ pub fn ChunkWriter(comptime T: type) type {
             };
         }
 
-        pub fn deinit(self: *Self) !void {
+        pub fn flush(self: *Self) !void {
             return self.buffered_writer.flush();
         }
 

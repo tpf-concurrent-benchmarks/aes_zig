@@ -47,9 +47,9 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
             };
         }
 
-        pub fn deinit(self: *Self) void {
+        pub fn destroy(self: *Self) !void {
             for (0..self.threads.len) |_| {
-                self.input_queue.push(MessageInput.init_eof());
+                try self.input_queue.push(MessageInput.init_eof());
             }
             for (self.threads) |thread| {
                 thread.join();
