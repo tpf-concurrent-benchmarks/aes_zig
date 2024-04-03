@@ -3,7 +3,7 @@ const AESBlockCipher = @import("aes_block_cipher.zig").AESBlockCipher;
 
 const ChunkReader = @import("chunk_reader.zig").ChunkReader;
 const ChunkWriter = @import("chunk_writer.zig").ChunkWriter;
-const ParallelMap = @import("components/pmap.zig").ParallelMap;
+const parallelMap = @import("components/pmap.zig").parallelMap;
 const c = @import("constants.zig");
 
 const N_B = c.N_B;
@@ -35,8 +35,8 @@ pub const AESCipher = struct {
     buffer: [][16]u8,
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
-    pmap_encrypt: ParallelMap([BLOCKS_PER_SLICE]Block, [BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks),
-    pmap_decrypt: ParallelMap([BLOCKS_PER_SLICE]Block, [BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks),
+    pmap_encrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks),
+    pmap_decrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks),
 
     const Self = @This();
 
@@ -49,8 +49,8 @@ pub const AESCipher = struct {
             .buffer = buffer,
             .arena = arena,
             .allocator = arena_allocator,
-            .pmap_encrypt = try ParallelMap([BLOCKS_PER_SLICE]Block, [BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks).init(n_threads, aes_cipher, allocator),
-            .pmap_decrypt = try ParallelMap([BLOCKS_PER_SLICE]Block, [BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks).init(n_threads, aes_cipher, allocator),
+            .pmap_encrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks).init(n_threads, aes_cipher, allocator),
+            .pmap_decrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks).init(n_threads, aes_cipher, allocator),
         };
     }
 

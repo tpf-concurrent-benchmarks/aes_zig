@@ -109,3 +109,7 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
         }
     };
 }
+
+pub fn parallelMap(comptime R: type, comptime T: type, comptime f: *const fn (T, R) R) @TypeOf(ParallelMap(R, R, T, f)) {
+    return ParallelMap(R, R, T, f);
+}
