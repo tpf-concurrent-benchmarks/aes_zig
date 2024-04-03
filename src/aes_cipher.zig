@@ -3,7 +3,7 @@ const AESBlockCipher = @import("aes_block_cipher.zig").AESBlockCipher;
 
 const ChunkReader = @import("chunk_reader.zig").ChunkReader;
 const ChunkWriter = @import("chunk_writer.zig").ChunkWriter;
-const ParallelMap = @import("pmap.zig").ParallelMap;
+const ParallelMap = @import("components/pmap.zig").ParallelMap;
 const c = @import("constants.zig");
 
 const N_B = c.N_B;

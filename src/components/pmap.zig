@@ -1,12 +1,12 @@
 pub const std = @import("std");
 pub const Thread = std.Thread;
-pub const Queue = @import("components/queue.zig").Queue;
-pub const Message = @import("components/message.zig").Message;
-pub const initiate_worker = @import("components/worker.zig").initiate_worker;
-pub const Worker = @import("components/worker.zig").Worker;
-pub const MinHeap = @import("components/min_heap.zig").MinHeap;
+pub const Queue = @import("queue.zig").Queue;
+pub const Message = @import("message.zig").Message;
+pub const initiate_worker = @import("worker.zig").initiate_worker;
+pub const Worker = @import("worker.zig").Worker;
+pub const MinHeap = @import("min_heap.zig").MinHeap;
 
-pub const c = @import("constants.zig");
+pub const c = @import("../constants.zig");
 
 pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptime f: *const fn (T, R) S) type {
     return struct {
