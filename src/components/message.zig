@@ -16,6 +16,11 @@ pub fn Message(comptime T: type) type {
             return Self{ .data = data, .pos = pos };
         }
 
+        pub fn init_null(pos: u64) Self {
+            std.debug.assert(T == u0);
+            return Self{ .data = undefined, .pos = pos };
+        }
+
         pub fn order(self: Self, other: Message(T)) Order {
             return std.math.order(self.pos, other.pos);
         }
@@ -30,30 +35,41 @@ pub fn Message(comptime T: type) type {
     };
 }
 
+pub const EmptyMessage = Message(u0);
+
 pub fn DataWithFn(comptime Ctx: type, comptime R: type, comptime S: type) type {
     return struct {
-        data: R,
+        data: []const R,
         func: ?*const fn (*const Ctx, R) S,
         func2: ?*const fn (R) S,
         context: ?*const Ctx,
+        destination: []S,
 
         const Self = @This();
 
-        pub fn init(data: R, func: *const fn (*const Ctx, R) S, context: *const Ctx) Self {
-            return Self{ .data = data, .func = func, .func2 = null, .context = context };
+        pub fn init(data: []const R, func: *const fn (*const Ctx, R) S, context: *const Ctx, destination: []S) Self {
+            return Self{ .data = data, .func = func, .func2 = null, .context = context, .destination = destination };
         }
 
-        pub fn init_stateless(data: R, func: *const fn (R) S) Self {
-            return Self{ .data = data, .func = null, .func2 = func, .context = null };
+        pub fn init_stateless(data: []const R, func: *const fn (R) S, destination: []S) Self {
+            return Self{ .data = data, .func = null, .func2 = func, .context = null, .destination = destination };
         }
 
-        pub fn call(self: Self) S {
+        fn call_one(self: Self, value: *const R) S {
             if (self.func) |func| {
-                return func(self.context.?, self.data);
+                return func(self.context.?, value.*);
             } else if (self.func2) |func| {
-                return func(self.data);
+                return func(value.*);
             } else {
                 unreachable;
+            }
+        }
+
+        pub fn call(self: Self) void {
+            std.debug.assert(self.destination.len >= self.data.len);
+
+            for (self.data, 0..) |item, i| {
+                self.destination[i] = self.call_one(&item);
             }
         }
     };

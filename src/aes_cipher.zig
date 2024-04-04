@@ -13,30 +13,12 @@ const BLOCKS_PER_SLICE = 32;
 const BUFFER_SIZE = SLICES * BLOCKS_PER_SLICE;
 const Block = [4 * N_B]u8;
 
-fn cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
-    var result: [BLOCKS_PER_SLICE]Block = undefined;
-
-    for (blocks, 0..) |block, i| {
-        result[i] = ctx.cipher_block(block);
-    }
-    return result;
-}
-
-fn inv_cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
-    var result: [BLOCKS_PER_SLICE]Block = undefined;
-
-    for (blocks, 0..) |block, i| {
-        result[i] = ctx.inv_cipher_block(block);
-    }
-    return result;
-}
-
 pub const AESCipher = struct {
     buffer: []Block,
     block_cipher: AESBlockCipher,
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
-    pmap: similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
+    pmap: similarMap(Block, AESBlockCipher),
 
     const Self = @This();
 
@@ -50,7 +32,7 @@ pub const AESCipher = struct {
             .block_cipher = aes_cipher,
             .arena = arena,
             .allocator = arena_allocator,
-            .pmap = try similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
+            .pmap = try similarMap(Block, AESBlockCipher).init(n_threads, SLICES, allocator),
         };
     }
 
@@ -98,8 +80,7 @@ pub const AESCipher = struct {
     pub fn cipher(self: *Self, input: anytype, output: anytype) !void {
         var chunk_reader = ChunkReader(@TypeOf(input)).init(true, input);
         var chunk_writer = ChunkWriter(@TypeOf(output)).init(false, output);
-        var input_blocks: [SLICES][BLOCKS_PER_SLICE]Block = undefined;
-        var results: [SLICES][BLOCKS_PER_SLICE]Block = undefined;
+        var results: [BUFFER_SIZE]Block = undefined;
 
         while (true) {
             const chunks_filled = try chunk_reader.read_chunks(BUFFER_SIZE, self.buffer);
@@ -107,13 +88,8 @@ pub const AESCipher = struct {
                 break;
             }
 
-            const slices_filled = Self.get_slices_filled(chunks_filled);
-            const blocks_filled_last_slice = Self.get_blocks_filled_last_slice(chunks_filled);
-
-            self.fill_blocks(&input_blocks, slices_filled, blocks_filled_last_slice);
-
-            try self.pmap.map(&self.block_cipher, cipher_blocks, input_blocks[0..slices_filled], results[0..]);
-            try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
+            try self.pmap.map(&self.block_cipher, AESBlockCipher.cipher_block, self.buffer[0..chunks_filled], results[0..]);
+            try chunk_writer.write_chunks(results[0..chunks_filled]);
         }
         return chunk_writer.flush();
     }
@@ -121,8 +97,7 @@ pub const AESCipher = struct {
     pub fn decipher(self: *Self, input: anytype, output: anytype) !void {
         var chunk_reader = ChunkReader(@TypeOf(input)).init(false, input);
         var chunk_writer = ChunkWriter(@TypeOf(output)).init(true, output);
-        var output_blocks: [SLICES][BLOCKS_PER_SLICE]Block = undefined;
-        var results: [SLICES][BLOCKS_PER_SLICE]Block = undefined;
+        var results: [BUFFER_SIZE]Block = undefined;
 
         while (true) {
             const chunks_filled = try chunk_reader.read_chunks(BUFFER_SIZE, self.buffer);
@@ -130,14 +105,8 @@ pub const AESCipher = struct {
                 break;
             }
 
-            const slices_filled = Self.get_slices_filled(chunks_filled);
-            const blocks_filled_last_slice = Self.get_blocks_filled_last_slice(chunks_filled);
-
-            self.fill_blocks(&output_blocks, slices_filled, blocks_filled_last_slice);
-
-            try self.pmap.map(&self.block_cipher, inv_cipher_blocks, output_blocks[0..slices_filled], results[0..]);
-
-            try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
+            try self.pmap.map(&self.block_cipher, AESBlockCipher.inv_cipher_block, self.buffer[0..chunks_filled], results[0..]);
+            try chunk_writer.write_chunks(results[0..chunks_filled]);
         }
         return chunk_writer.flush();
     }
