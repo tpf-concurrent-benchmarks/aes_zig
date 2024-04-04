@@ -2,38 +2,40 @@ pub const std = @import("std");
 pub const Thread = std.Thread;
 pub const Queue = @import("queue.zig").Queue;
 pub const Message = @import("message.zig").Message;
+pub const DataWithFn = @import("message.zig").DataWithFn;
 pub const initiate_worker = @import("worker.zig").initiate_worker;
 pub const Worker = @import("worker.zig").Worker;
 pub const MinHeap = @import("min_heap.zig").MinHeap;
 
 pub const c = @import("../constants.zig");
 
-pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptime f: *const fn (T, R) S) type {
+pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type) type {
     return struct {
         pub const Self = @This();
-        pub const MessageInput = Message(R);
+        const Data = DataWithFn(T, R, S);
+        pub const MessageInput = Message(Data);
         pub const MessageOutput = Message(S);
 
         threads: []Thread,
         workers: []Worker(R, S, T),
-        input_queue: *Queue(Message(R)),
-        output_queue: *Queue(Message(S)),
+        input_queue: *Queue(MessageInput),
+        output_queue: *Queue(MessageOutput),
         allocator: std.mem.Allocator,
 
         heap: MinHeap(Message(S)),
 
-        pub fn init(n_threads: usize, ctx: T, allocator: std.mem.Allocator) !Self {
+        pub fn init(n_threads: usize, allocator: std.mem.Allocator) !Self {
             var threads = try allocator.alloc(Thread, n_threads);
             var workers = try allocator.alloc(Worker(R, S, T), n_threads);
 
-            var input_queue = try allocator.create(Queue(Message(R)));
-            var output_queue = try allocator.create(Queue(Message(S)));
+            var input_queue = try allocator.create(Queue(MessageInput));
+            var output_queue = try allocator.create(Queue(MessageOutput));
 
             input_queue.init_ptr(50, allocator);
             output_queue.init_ptr(50, allocator);
 
             for (0..n_threads) |i| {
-                workers[i] = Worker(R, S, T).init(input_queue, output_queue, ctx, f);
+                workers[i] = Worker(R, S, T).init(input_queue, output_queue);
                 threads[i] = try initiate_worker(R, S, T, &workers[i]);
             }
 
@@ -62,10 +64,10 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
             self.allocator.free(self.workers);
         }
 
-        fn send_messages(self: *Self, input: []const R) !void {
+        fn send_messages(self: *Self, ctx: *const T, func: *const fn(*const T, R) S, input: []const R) !void {
             var next_pos: u64 = 0;
             for (input) |item| {
-                const message = MessageInput.init(item, next_pos);
+                const message = MessageInput.init(Data.init(item, func, ctx), next_pos);
                 next_pos += 1;
                 try self.input_queue.push(message);
             }
@@ -103,13 +105,13 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type, comptim
             }
         }
 
-        pub fn map(self: *Self, input: []const R, results: []S) !void {
-            try self.send_messages(input);
+        pub fn map(self: *Self, ctx: *const T, func: *const fn(*const T, R) S, input: []const R, results: []S) !void {
+            try self.send_messages(ctx, func, input);
             try self.receive_results(input.len, results);
         }
     };
 }
 
-pub fn parallelMap(comptime R: type, comptime T: type, comptime f: *const fn (T, R) R) @TypeOf(ParallelMap(R, R, T, f)) {
-    return ParallelMap(R, R, T, f);
+pub fn parallelMap(comptime R: type, comptime T: type) type {
+    return ParallelMap(R, R, T);
 }

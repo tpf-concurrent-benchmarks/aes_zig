@@ -1,25 +1,22 @@
 const std = @import("std");
 const Queue = @import("queue.zig").Queue;
 const Message = @import("message.zig").Message;
+const DataWithFn = @import("message.zig").DataWithFn;
 const c = @import("../constants.zig");
 
 const Block = [4 * c.N_B]u8;
 
 pub fn Worker(comptime R: type, comptime S: type, comptime T: type) type {
     return struct {
-        input_queue: *Queue(Message(R)),
+        input_queue: *Queue(Message(DataWithFn(T, R, S))),
         result_queue: *Queue(Message(S)),
-        work_fn: *const fn(T, R) S,
-        ctx: T,
 
         const Self = @This();
 
-        pub fn init(input_queue: *Queue(Message(R)), result_queue: *Queue(Message(S)), ctx: T, comptime work_fn: *const fn(T, R) S) Self {
+        pub fn init(input_queue: *Queue(Message(DataWithFn(T, R, S))), result_queue: *Queue(Message(S))) Self {
             return Self{
                 .input_queue = input_queue,
                 .result_queue = result_queue,
-                .work_fn = work_fn,
-                .ctx = ctx
             };
         }
 
@@ -31,10 +28,10 @@ pub fn Worker(comptime R: type, comptime S: type, comptime T: type) type {
                     break;
                 }
 
-                const result = self.work_fn(self.ctx, message.data);
+                const result = message.data.call();
 
-                message.data = result;
-                try self.result_queue.push(message);
+                const result_msg = Message(S).init(result, message.pos);
+                try self.result_queue.push(result_msg);
             }
         }
     };

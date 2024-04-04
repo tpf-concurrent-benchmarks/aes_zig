@@ -11,7 +11,7 @@ const SLICES = 32;
 const BLOCKS_PER_SLICE = 32;
 const BUFFER_SIZE = SLICES * BLOCKS_PER_SLICE;
 
-fn cipher_blocks(ctx: AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
+fn cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
     var result: [BLOCKS_PER_SLICE]Block = undefined;
 
     for (blocks, 0..) |block, i| {
@@ -20,7 +20,7 @@ fn cipher_blocks(ctx: AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_P
     return result;
 }
 
-fn inv_cipher_blocks(ctx: AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
+fn inv_cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
     var result: [BLOCKS_PER_SLICE]Block = undefined;
 
     for (blocks, 0..) |block, i| {
@@ -33,10 +33,11 @@ const Block = [4 * c.N_B]u8;
 
 pub const AESCipher = struct {
     buffer: [][16]u8,
+    block_cipher: AESBlockCipher,
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
-    pmap_encrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks),
-    pmap_decrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks),
+    pmap_encrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
+    pmap_decrypt: parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
 
     const Self = @This();
 
@@ -47,10 +48,11 @@ pub const AESCipher = struct {
         const buffer = arena_allocator.alloc(Block, BUFFER_SIZE) catch return error.OutOfMemory;
         return Self{
             .buffer = buffer,
+            .block_cipher = aes_cipher,
             .arena = arena,
             .allocator = arena_allocator,
-            .pmap_encrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, cipher_blocks).init(n_threads, aes_cipher, allocator),
-            .pmap_decrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher, inv_cipher_blocks).init(n_threads, aes_cipher, allocator),
+            .pmap_encrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
+            .pmap_decrypt = try parallelMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
         };
     }
 
@@ -113,7 +115,7 @@ pub const AESCipher = struct {
 
             self.fill_blocks(&input_blocks, slices_filled, blocks_filled_last_slice);
 
-            try self.pmap_encrypt.map(input_blocks[0..slices_filled], results[0..]);
+            try self.pmap_encrypt.map(&self.block_cipher, cipher_blocks, input_blocks[0..slices_filled], results[0..]);
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
         return chunk_writer.flush();
@@ -136,7 +138,7 @@ pub const AESCipher = struct {
 
             self.fill_blocks(&output_blocks, slices_filled, blocks_filled_last_slice);
 
-            try self.pmap_decrypt.map(output_blocks[0..slices_filled], results[0..]);
+            try self.pmap_decrypt.map(&self.block_cipher, inv_cipher_blocks, output_blocks[0..slices_filled], results[0..]);
 
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
