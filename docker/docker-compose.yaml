@@ -78,7 +78,7 @@ services:
       restart_policy:
         condition: none
     volumes:
-      # - "../.env:/opt/app/.env:ro"
+      - "../.env:/opt/app/.env:ro"
       - "../data:/opt/app/data:rw"
 
 volumes:

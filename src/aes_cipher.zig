@@ -11,6 +11,7 @@ const N_B = c.N_B;
 const SLICES = 32;
 const BLOCKS_PER_SLICE = 32;
 const BUFFER_SIZE = SLICES * BLOCKS_PER_SLICE;
+const Block = [4 * N_B]u8;
 
 fn cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block) [BLOCKS_PER_SLICE]Block {
     var result: [BLOCKS_PER_SLICE]Block = undefined;
@@ -30,10 +31,8 @@ fn inv_cipher_blocks(ctx: *const AESBlockCipher, blocks: [BLOCKS_PER_SLICE]Block
     return result;
 }
 
-const Block = [4 * c.N_B]u8;
-
 pub const AESCipher = struct {
-    buffer: [][16]u8,
+    buffer: []Block,
     block_cipher: AESBlockCipher,
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,

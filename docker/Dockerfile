@@ -13,9 +13,6 @@ RUN apt-get update && apt-get install -y \
 RUN curl -L ${ZIG_URL} -o zig-linux-x86_64-${ZIG_VERSION}.tar.xz \
     && tar -xf zig-linux-x86_64-${ZIG_VERSION}.tar.xz
 
-# RUN mv /zig-linux-x86_64-${ZIG_VERSION}/zig /usr/local/bin
-# RUN mv /zig-linux-x86_64-${ZIG_VERSION}/lib /usr/local/lib
-
 WORKDIR /opt/app
 
 COPY src src
