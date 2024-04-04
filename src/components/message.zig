@@ -33,17 +33,28 @@ pub fn Message(comptime T: type) type {
 pub fn DataWithFn(comptime Ctx: type, comptime R: type, comptime S: type) type {
     return struct {
         data: R,
-        func: *const fn (*const Ctx, R) S,
-        context: *const Ctx,
+        func: ?*const fn (*const Ctx, R) S,
+        func2: ?*const fn (R) S,
+        context: ?*const Ctx,
 
         const Self = @This();
 
         pub fn init(data: R, func: *const fn (*const Ctx, R) S, context: *const Ctx) Self {
-            return Self{ .data = data, .func = func, .context = context };
+            return Self{ .data = data, .func = func, .func2 = null, .context = context };
+        }
+
+        pub fn init_stateless(data: R, func: *const fn (R) S) Self {
+            return Self{ .data = data, .func = null, .func2 = func, .context = null };
         }
 
         pub fn call(self: Self) S {
-            return self.func(self.context, self.data);
+            if (self.func) |func| {
+                return func(self.context.?, self.data);
+            } else if (self.func2) |func| {
+                return func(self.data);
+            } else {
+                unreachable;
+            }
         }
     };
 }

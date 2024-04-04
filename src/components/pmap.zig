@@ -73,6 +73,15 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type) type {
             }
         }
 
+        fn send_messages_stateless(self: *Self, func: *const fn(R) S, input: []const R) !void {
+            var next_pos: u64 = 0;
+            for (input) |item| {
+                const message = MessageInput.init(Data.init_stateless(item, func), next_pos);
+                next_pos += 1;
+                try self.input_queue.push(message);
+            }
+        }
+
         fn receive_results(self: *Self, expected_results: usize, results: []S) !void {
             var next_item: u64 = 0;
 
@@ -106,12 +115,48 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime T: type) type {
         }
 
         pub fn map(self: *Self, ctx: *const T, func: *const fn(*const T, R) S, input: []const R, results: []S) !void {
+            std.debug.assert(results.len >= input.len);
+
             try self.send_messages(ctx, func, input);
             try self.receive_results(input.len, results);
+        }
+
+        // Allocates the results array
+        // Invoker owns the array, and must free it
+        pub fn map_alloc(self: *Self, ctx: *const T, func: *const fn(*const T, R) S, input: []const R) ![]S {
+            var results = try self.allocator.alloc(S, input.len);
+            try self.map(ctx, func, input, results);
+            return results;
+        }
+
+        pub fn map_stateless(self: *Self, func: *const fn(R) S, input: []const R, results: []S) !void {
+            std.debug.assert(results.len >= input.len);
+            std.debug.assert(T == u0);
+
+            try self.send_messages_stateless(func, input);
+            try self.receive_results(input.len, results);
+        }
+
+        // Allocates the results array
+        // Invoker owns the array, and must free it
+        pub fn map_stateless_alloc(self: *Self, func: *const fn(R) S, input: []const R) ![]S {
+            std.debug.assert(T == u0);
+
+            var results = try self.allocator.alloc(S, input.len);
+            try self.map_stateless(func, input, results);
+            return results;
         }
     };
 }
 
-pub fn parallelMap(comptime R: type, comptime T: type) type {
+pub fn similarMap(comptime R: type, comptime T: type) type {
     return ParallelMap(R, R, T);
+}
+
+pub fn statelessMap(comptime R: type, comptime S: type) type {
+    return ParallelMap(R, S, u0);
+}
+
+pub fn statelessSimilarMap(comptime R: type) type {
+    return ParallelMap(R, R, u0);
 }
