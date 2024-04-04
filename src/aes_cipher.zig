@@ -37,8 +37,7 @@ pub const AESCipher = struct {
     block_cipher: AESBlockCipher,
     arena: std.heap.ArenaAllocator,
     allocator: std.mem.Allocator,
-    pmap_encrypt: similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
-    pmap_decrypt: similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
+    pmap: similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher),
 
     const Self = @This();
 
@@ -52,15 +51,13 @@ pub const AESCipher = struct {
             .block_cipher = aes_cipher,
             .arena = arena,
             .allocator = arena_allocator,
-            .pmap_encrypt = try similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
-            .pmap_decrypt = try similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
+            .pmap = try similarMap([BLOCKS_PER_SLICE]Block, AESBlockCipher).init(n_threads, allocator),
         };
     }
 
     pub fn destroy(self: *Self) !void {
         self.arena.deinit();
-        try self.pmap_encrypt.destroy();
-        try self.pmap_decrypt.destroy();
+        try self.pmap.destroy();
     }
 
     inline fn get_slices_filled(chunks_filled: usize) usize {
@@ -116,7 +113,7 @@ pub const AESCipher = struct {
 
             self.fill_blocks(&input_blocks, slices_filled, blocks_filled_last_slice);
 
-            try self.pmap_encrypt.map(&self.block_cipher, cipher_blocks, input_blocks[0..slices_filled], results[0..]);
+            try self.pmap.map(&self.block_cipher, cipher_blocks, input_blocks[0..slices_filled], results[0..]);
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
         return chunk_writer.flush();
@@ -139,7 +136,7 @@ pub const AESCipher = struct {
 
             self.fill_blocks(&output_blocks, slices_filled, blocks_filled_last_slice);
 
-            try self.pmap_decrypt.map(&self.block_cipher, inv_cipher_blocks, output_blocks[0..slices_filled], results[0..]);
+            try self.pmap.map(&self.block_cipher, inv_cipher_blocks, output_blocks[0..slices_filled], results[0..]);
 
             try Self.write_slices(@TypeOf(output), &chunk_writer, results[0..slices_filled], slices_filled, blocks_filled_last_slice);
         }
