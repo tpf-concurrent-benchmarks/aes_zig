@@ -10,6 +10,16 @@ pub const MinHeap = @import("min_heap.zig").MinHeap;
 
 pub const constants = @import("../constants.zig");
 
+const c = @cImport({
+    @cInclude("sys/sysinfo.h");
+});
+
+pub const Config = struct {
+    n_threads: ?usize = null,
+    batch_size: usize = 1,
+    allocator: std.mem.Allocator
+};
+
 pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type {
     return struct {
         pub const Self = @This();
@@ -24,15 +34,17 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
         allocator: std.mem.Allocator,
         batch_size: usize,
 
-        pub fn init(n_threads: usize, batch_size: usize, allocator: std.mem.Allocator) !Self {
-            var threads = try allocator.alloc(Thread, n_threads);
-            var workers = try allocator.alloc(Worker(R, S, Ctx), n_threads);
+        pub fn init(config: Config) !Self {
+            const n_threads: usize = if (config.n_threads != null) config.n_threads.? else @intCast(c.get_nprocs());
 
-            var input_queue = try allocator.create(Queue(MessageInput));
-            var output_queue = try allocator.create(Queue(MessageOutput));
+            var threads = try config.allocator.alloc(Thread, n_threads);
+            var workers = try config.allocator.alloc(Worker(R, S, Ctx), n_threads);
 
-            input_queue.init_ptr(50, allocator);
-            output_queue.init_ptr(50, allocator);
+            var input_queue = try config.allocator.create(Queue(MessageInput));
+            var output_queue = try config.allocator.create(Queue(MessageOutput));
+
+            input_queue.init_ptr(config.allocator);
+            output_queue.init_ptr(config.allocator);
 
             for (0..n_threads) |i| {
                 workers[i] = Worker(R, S, Ctx).init(input_queue, output_queue);
@@ -44,8 +56,8 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
                 .workers = workers,
                 .input_queue = input_queue,
                 .output_queue = output_queue,
-                .allocator = allocator,
-                .batch_size = batch_size,
+                .allocator = config.allocator,
+                .batch_size = config.batch_size,
             };
         }
 
