@@ -33,7 +33,7 @@ pub fn Worker(comptime R: type, comptime S: type, comptime Ctx: type) type {
 
                 message.data.call();
 
-                try self.result_queue.push(OutputType.init_null(message.pos));
+                try self.result_queue.push(OutputType.init_null());
             }
         }
     };

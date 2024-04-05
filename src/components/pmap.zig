@@ -8,7 +8,7 @@ pub const initiate_worker = @import("worker.zig").initiate_worker;
 pub const Worker = @import("worker.zig").Worker;
 pub const MinHeap = @import("min_heap.zig").MinHeap;
 
-pub const c = @import("../constants.zig");
+pub const constants = @import("../constants.zig");
 
 pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type {
     return struct {
@@ -23,8 +23,6 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
         output_queue: *Queue(MessageOutput),
         allocator: std.mem.Allocator,
         batch_size: usize,
-
-        heap: MinHeap(MessageOutput),
 
         pub fn init(n_threads: usize, batch_size: usize, allocator: std.mem.Allocator) !Self {
             var threads = try allocator.alloc(Thread, n_threads);
@@ -48,7 +46,6 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
                 .output_queue = output_queue,
                 .allocator = allocator,
                 .batch_size = batch_size,
-                .heap = try MinHeap(MessageOutput).init(c.MAX_HEAP_SIZE, MessageOutput.order, allocator),
             };
         }
 
@@ -72,17 +69,14 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
             var next_pos: u64 = 0;
             var input_pos: usize = 0;
 
-            while (true) {
+            while (input_pos < input.len) {
                 const actual_batch_size = @min(self.batch_size, input.len - input_pos);
                 const input_slice = input[input_pos..input_pos+actual_batch_size];
                 const results_slice = results[input_pos..input_pos+actual_batch_size];
-                const message = MessageInput.init(Data.init(input_slice, func, ctx, results_slice), next_pos);
+                const message = MessageInput.init(Data.init(input_slice, func, ctx, results_slice));
                 input_pos += actual_batch_size;
                 next_pos += 1;
                 try self.input_queue.push(message);
-                if (input_pos >= input.len) {
-                    break;
-                }
             }
             return next_pos;
         }
@@ -91,49 +85,29 @@ pub fn ParallelMap(comptime R: type, comptime S: type, comptime Ctx: type) type 
             var next_pos: u64 = 0;
             var input_pos: usize = 0;
 
-            while (true) {
+            while (input_pos < input.len) {
                 const actual_batch_size = @min(self.batch_size, input.len - input_pos);
                 const input_slice = input[input_pos..input_pos+actual_batch_size];
                 const results_slice = results[input_pos..input_pos+actual_batch_size];
-                const message = MessageInput.init(Data.init_stateless(input_slice, func, results_slice), next_pos);
+                const message = MessageInput.init(Data.init_stateless(input_slice, func, results_slice));
                 input_pos += actual_batch_size;
                 next_pos += 1;
                 try self.input_queue.push(message);
-                if (input_pos >= input.len) {
-                    break;
-                }
             }
         }
 
         fn receive_results(self: *Self, expected_batches: usize, results: []S) !void {
             std.debug.assert(results.len >= expected_batches);
 
-            var next_item: u64 = 0;
+            var received_results: u64 = 0;
 
-            while (true) {
+            while (received_results < expected_batches) {
                 const message = self.output_queue.pop();
                 if (message.is_eof()) {
                     break;
                 }
 
-                if (message.pos > next_item) {
-                    self.heap.push(message);
-                    continue;
-                }
-
-                if (message.pos < next_item) {
-                    @panic("Received block out of order");
-                }
-
-                next_item += 1;
-
-                while (self.heap.len() > 0 and self.heap.peek().pos == next_item) {
-                    _ = self.heap.pop();
-                    next_item += 1;
-                }
-                if (next_item == expected_batches) {
-                    break;
-                }
+                received_results += 1;
             }
         }
 
