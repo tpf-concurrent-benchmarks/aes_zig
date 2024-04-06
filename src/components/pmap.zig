@@ -6,9 +6,6 @@ pub const EmptyMessage = @import("message.zig").EmptyMessage;
 pub const DataWithFn = @import("message.zig").DataWithFn;
 pub const initiate_worker = @import("worker.zig").initiate_worker;
 pub const Worker = @import("worker.zig").Worker;
-pub const MinHeap = @import("min_heap.zig").MinHeap;
-
-pub const constants = @import("../constants.zig");
 
 const c = @cImport({
     @cInclude("sys/sysinfo.h");

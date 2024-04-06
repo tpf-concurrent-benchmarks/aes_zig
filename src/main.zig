@@ -31,5 +31,5 @@ fn do_iteration(cipher: *AESCipher, config: Config) !void {
 }
 
 test {
-    _ = @import("matrix.zig");
+    _ = @import("block_cipher/aes_block_cipher.zig");
 }

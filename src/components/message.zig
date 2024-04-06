@@ -1,6 +1,5 @@
 const std = @import("std");
 const Order = std.math.Order;
-const c = @import("../constants.zig");
 const MinHeap = @import("min_heap.zig").MinHeap;
 
 pub fn Message(comptime T: type) type {

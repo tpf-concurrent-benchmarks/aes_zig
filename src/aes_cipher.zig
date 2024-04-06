@@ -1,11 +1,11 @@
 const std = @import("std");
-const AESBlockCipher = @import("aes_block_cipher.zig").AESBlockCipher;
+const AESBlockCipher = @import("block_cipher/aes_block_cipher.zig").AESBlockCipher;
 
-const ChunkReader = @import("chunk_reader.zig").ChunkReader;
-const ChunkWriter = @import("chunk_writer.zig").ChunkWriter;
+const ChunkReader = @import("utils/chunk_reader.zig").ChunkReader;
+const ChunkWriter = @import("utils/chunk_writer.zig").ChunkWriter;
 const similarMap = @import("components/pmap.zig").similarMap;
 const statelessSimilarMap = @import("components/pmap.zig").statelessSimilarMap;
-const c = @import("constants.zig");
+const c = @import("block_cipher/constants.zig");
 
 const N_B = c.N_B;
 const SLICES = 32;

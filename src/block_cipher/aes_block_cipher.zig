@@ -148,3 +148,9 @@ test "AESBlockCipher.inv_cipher_block should return the expected plain text" {
 
     try std.testing.expect(std.mem.eql(u8, &plain_text, &expected_plain_text));
 }
+
+test {
+    _ = @import("aes_key.zig");
+    _ = @import("matrix.zig");
+    _ = @import("state.zig");
+}

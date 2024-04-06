@@ -3,9 +3,6 @@ const Queue = @import("queue.zig").Queue;
 const Message = @import("message.zig").Message;
 const EmptyMessage = @import("message.zig").EmptyMessage;
 const DataWithFn = @import("message.zig").DataWithFn;
-const c = @import("../constants.zig");
-
-const Block = [4 * c.N_B]u8;
 
 pub fn Worker(comptime R: type, comptime S: type, comptime Ctx: type) type {
     return struct {
