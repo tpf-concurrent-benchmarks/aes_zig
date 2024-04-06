@@ -32,7 +32,7 @@ pub const AESCipher = struct {
             .block_cipher = aes_cipher,
             .arena = arena,
             .allocator = arena_allocator,
-            .pmap = try similarMap(Block, AESBlockCipher).init(.{.n_threads=n_threads, .batch_size=SLICES, .allocator=allocator}),
+            .pmap = try similarMap(Block, AESBlockCipher).init(.{ .n_threads = n_threads, .batch_size = SLICES, .allocator = allocator }),
         };
     }
 

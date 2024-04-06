@@ -15,7 +15,7 @@ pub fn main() !void {
     defer cipher.destroy() catch @panic("Failed to destroy cipher");
 
     for (0..config.repeat) |i| {
-        std.debug.print("Iteration {}\n", .{i+1});
+        std.debug.print("Iteration {}\n", .{i + 1});
 
         try do_iteration(&cipher, config);
     }
