@@ -32,4 +32,6 @@ fn do_iteration(cipher: *AESCipher, config: Config) !void {
 
 test {
     _ = @import("block_cipher/aes_block_cipher.zig");
+    _ = @import("utils/chunk_reader.zig");
+    _ = @import("utils/chunk_writer.zig");
 }
