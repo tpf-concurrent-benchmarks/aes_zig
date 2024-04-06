@@ -8,7 +8,12 @@ _common_folders:
 	mkdir -p data
 .PHONY: _common_folders
 
-setup: _common_folders
+_create_env:
+	if [ ! -f .env ]; then \
+		cp .env.example .env; \
+	fi
+
+setup: _create_env _common_folders
 
 run:
 	zig build run -Doptimize=ReleaseFast
