@@ -24,6 +24,8 @@ FROM alpine:latest
 
 WORKDIR /opt/app
 
+RUN apk update && apk add --no-cache gcompat
+
 COPY --from=build /opt/app/zig-out/bin/aes .
 
 CMD ["./aes"]
