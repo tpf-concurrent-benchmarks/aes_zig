@@ -44,6 +44,17 @@ pub fn Queue(comptime T: type) type {
             self.lock.unlock();
         }
 
+        pub fn push(self: *Self, value: T) !void {
+            var new_node = try self.allocator.create(TailQueueType.Node);
+            new_node.data = value;
+
+            self.lock.lock();
+            self.unsafe_queue.append(new_node);
+            self.lock.unlock();
+            
+            self.not_empty.post();
+        }
+
         fn remove(self: *Self) T {
             self.lock.lock();
             if (self.unsafe_queue.popFirst()) |node| {
@@ -53,11 +64,6 @@ pub fn Queue(comptime T: type) type {
             }
             self.lock.unlock();
             std.debug.panic("Queue is empty", .{});
-        }
-
-        pub fn push(self: *Self, value: T) !void {
-            try self.append(value);
-            self.not_empty.post();
         }
 
         pub fn pop(self: *Self) T {
