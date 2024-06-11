@@ -74,6 +74,7 @@ services:
 
   app:
     image: aes_zig
+    command: sh -c "sleep 10 && ./aes"
     deploy:
       restart_policy:
         condition: none

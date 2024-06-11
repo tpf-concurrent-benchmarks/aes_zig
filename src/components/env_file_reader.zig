@@ -24,7 +24,6 @@ pub const EnvFileReader = struct {
 
 	pub fn deinit(self: Self) void {
 		self.arena.deinit();
-		self.vars.deinit();
 	}
 
 	fn read_vars(reader: File.Reader, allocator: Allocator) !Map {
@@ -57,6 +56,11 @@ pub const EnvFileReader = struct {
 		const value = self.vars.get(key) orelse return null;
 		return try std.fmt.parseInt(usize, value, 0);
 	}
+
+    pub fn get_u16(self: Self, key: []const u8) !?u16 {
+        const value = self.vars.get(key) orelse return null;
+        return try std.fmt.parseInt(u16, value, 0);
+    }
 
 	pub fn get_bool(self: Self, key: []const u8) !?bool {
 		const value = self.vars.get(key) orelse return null;
